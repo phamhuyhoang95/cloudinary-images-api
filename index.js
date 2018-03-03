@@ -1,5 +1,3 @@
-
-
 // setup server 
 const express = require('express')
 const app = express()
@@ -11,18 +9,12 @@ require('dotenv').config({
 const bodyParser = require('body-parser');
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({
-    extended: true
+    extended: true,
+    limit: '50mb'
 })); // support encoded bodies
-// setup cloudinary and upload file
-const cloudinary = require('cloudinary');
+// setup upload file
 const multer = require('multer')
 const upload = multer()
-cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
-    api_key: process.env.API_KEY,
-    api_secret: process.env.API_SECRET
-});
-
 // setup database 
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
@@ -30,64 +22,90 @@ const adapter = new FileSync('./database/imageDB.json')
 const db = low(adapter)
 
 // addition lib
-const validator = require('joi')
-const _ = require('lodash')
 
+const Fuse = require('fuse.js')
+const {
+    uploadToCloudinary,
+    deleteFileFromCloudinary,
+    getPaginatedItems,
+    _,
+    validator,
+    trimArr,
+    validateModel
+} = require('./helper/utils')
+/**
+ * upload images to cloudinary
+ */
 app.post('/images', upload.array('images'), async (req, res, next) => {
-    const {
-        tags,
-        category_name
-    } = req.body
-    const images = req.files
-    const uploadProgress = await Promise.all(images.map(image => {
-        const fileName = image.originalname.split('.')[0]
-        const resource_type = 'image'
-        const buffer = image.buffer
-        return uploadToCloudinary(fileName, resource_type, buffer, tags)
-    }))
-    // insert to db after upload success to cloudinary
-    db.defaults({
-        images: []
-    }).write()
-    uploadProgress.map(image => {
-        // add category to image 
-        image.category_name = category_name
-        // default feature image is false 
-        image.isFeatureImage = false
-        db.get('images').push(image).write()
+    const schema = validator.object().keys({
+        tags: validator.string().optional(),
+        category_name: validator.string().required()
     })
-    res.send(uploadProgress)
+    const run = async () => {
+        let {
+            tags,
+            category_name
+        } = req.body
+        //default is empty
+        tags = (tags) ? trimArr(tags.split(',')) : []
+        const images = req.files
+        const uploadProgress = await Promise.all(images.map(image => {
+            const {
+                originalname,
+                buffer
+            } = image
+            const fileName = originalname.split('.')[0]
+            const resource_type = 'image'
+            return uploadToCloudinary(fileName, resource_type, buffer, tags)
+        }))
+        // insert to db after upload success to cloudinary
+        db.defaults({
+            images: []
+        }).write()
+        uploadProgress.map(image => {
+            // add category to image 
+            image.category_name = category_name
+            // default feature image is false 
+            image.isFeatureImage = false
+            db.get('images').push(image).write()
+        })
+        res.send(uploadProgress)
+
+    }
+    validateModel(req.body, schema, res, run)
 })
 
+/**
+ * get images with search condition
+ */
 app.get('/images', async (req, res, next) => {
-    let {
-        page,
-        per_page,
-        category_name,
-        tags
-    } = req.query
-    // select image by matching category
-    let result = db.get("images").value()
-    tags = tags ? tags.split(',').map(tag => tag.trim()) : null
-    // apply filter 
-    if (tags && !category_name) {
-        result = result.filter(image => {
-            return image.tags.some(tag => tags.includes(tag))
-        })
-    } else if (category_name && !tags) {
-        result = result.filter(image => image.category_name == category_name)
-    } else if (tags && category_name) {
-        result = result.filter(image => image.category_name == category_name)
-        result = result.filter(image => {
-            return image.tags.some(tag => tags.includes(tag))
-        })
-    } else {
-        throw 'missing category_name and tags'
+    const schema = validator.object().keys({
+        query: validator.string().required(),
+        page: validator.number().min(1).optional(),
+        per_page: validator.number().min(1).optional()
+    })
+    const run = async () => {
+        let {
+            page,
+            per_page,
+            query
+        } = req.query
+        // select image by matching category
+        let result = db.get("images").value()
+        const options = {
+            keys: ['category_name', 'tags']
+        }
+        const fuse = new Fuse(result, options)
+        // search with query
+        result = fuse.search(query)
+        // paginate data 
+        result = getPaginatedItems(result, page, per_page)
+        // send back result to client
+        res.send(result)
+
     }
-    // paginate data 
-    result = getPaginatedItems(result, page, per_page)
-    // send back result to client
-    res.send(result)
+    validateModel(req.query, schema, res, run)
+
 })
 
 /**
@@ -97,23 +115,11 @@ app.put('/image', async (req, res) => {
     try {
         const schema = validator.object().keys({
             public_id: validator.string().required(),
-            category_name: validator.string().when('tags', {
-                is: validator.string().required(),
-                then: validator.optional(),
-                otherwise: validator.required()
-            }),
+            category_name: validator.string().optional(),
             tags: validator.string().optional(),
             isFeatureImage: validator.boolean().optional() // if true make this image become feature images
         })
-        var error = validator.validate(req.body, schema).error,
-            verbosity = !error || error.details
-        if (error && verbosity) {
-            res.status(400).json({
-                code: 400,
-                message: 'Missing or invalid params',
-                verbosity: verbosity
-            });
-        } else {
+        const run = async () => {
             let {
                 category_name,
                 tags,
@@ -123,20 +129,23 @@ app.put('/image', async (req, res) => {
             const foundImage = db.get('images').find({
                 public_id
             })
-            if (category_name && !isFeatureImage) {
+            // change category name 
+            if (category_name) {
                 foundImage.assign({
                     category_name
                 }).write()
             }
+            // change tags
             if (tags) {
-                tags = tags.split(',').map(tag => tag.trim())
-                foundImage.assign({
-                    tags
-                }).write()
+                tags = trimArr(tags.split(',')),
+                    foundImage.assign({
+                        tags
+                    }).write()
             }
-            if (isFeatureImage == true && category_name) {
+            if (isFeatureImage) {
+                // toggle flag feature image
                 foundImage.assign({
-                    isFeatureImage: true
+                    isFeatureImage: !foundImage.value().isFeatureImage
                 }).write()
                 // update all image of this category to false
                 // const featureImages = db.get('images').filter({category_name}).assign({})
@@ -146,6 +155,7 @@ app.put('/image', async (req, res) => {
                 message: `success update image with public_id = ${public_id}`,
             })
         }
+        validateModel(req.body, schema, res, run)
     } catch (error) {
         console.log(error)
         res.status(500);
@@ -156,24 +166,23 @@ app.put('/image', async (req, res) => {
  * API make delete image via public_id
  */
 app.delete('/image', async (req, res) => {
-    const {
-        public_id
-    } = req.body
+    const schema = validator.object().keys({
+        public_id: validator.string().required()
+    })
     try {
-        // delete in cloud first 
-        const cloudinaryMessage = await new Promise((resolve, reject) => {
-            cloudinary.v2.uploader.destroy(public_id, (err, result) => {
-                if (err) {
-                    reject(err)
-                }
-                resolve(result)
-            })
-        })
-        // finally delete in localdb
-        db.get('images').remove({
-            public_id
-        }).write()
-        res.send(cloudinaryMessage);
+        const run = async () => {
+            const {
+                public_id
+            } = req.body
+            // delete in cloud first 
+            const cloudinaryMessage = await deleteFileFromCloudinary(public_id)
+            // finally delete in localdb
+            db.get('images').remove({
+                public_id
+            }).write()
+            res.send(cloudinaryMessage);
+        }
+        validateModel(req.body, schema, res, run)
 
     } catch (error) {
         res.status(500).json({
@@ -181,6 +190,16 @@ app.delete('/image', async (req, res) => {
         });
     }
 
+})
+/**
+ * get Detail information for images
+ */
+app.get('/image', async (req, res) => {
+    const {
+        public_id
+    } = req.query
+    const image = db.get('images').find(img => img.public_id == public_id)
+    res.json(image)
 })
 /**
  * API return the list of all category
@@ -210,16 +229,14 @@ app.get('/categories', async (req, res) => {
     result = getPaginatedItems(result, page, per_page)
     res.send(result)
 })
-
-
 /**
  * get List Image for Category
  */
 app.get('/category', async (req, res) => {
     const {
         category_name,
-        page = 1,
-        per_page = 10
+        page,
+        per_page
     } = req.query
     let categories = db.get('images').filter({
         category_name
@@ -228,34 +245,14 @@ app.get('/category', async (req, res) => {
     res.send(categories)
 })
 
-function uploadToCloudinary(name, type, buffer, tags) {
-    return new Promise((resolve, reject) => {
-        cloudinary.v2.uploader.upload_stream({
-                public_id: name,
-                resource_type: type,
-                tags
-            }, (error, result) => {
-                if (error) {
-                    reject(error)
-                }
-                resolve(result)
-            })
-            .end(buffer);
-    })
-}
 
-function getPaginatedItems(items = [], page = 1, per_page = 5) {
-    offset = (page - 1) * per_page,
-        take = (offset + per_page),
-        paginatedItems = _.uniq(_.slice(items, offset, take))
-    return {
-        page: page,
-        per_page: per_page,
-        total: items.length,
-        total_pages: Math.ceil(items.length / per_page),
-        data: paginatedItems
-    };
-}
+/**
+ * export database api to backup sometimes
+ */
+
+app.get("/export/db", async (req, res) => {
+    res.json(db.get('images').value())
+})
 
 // add api to get more app => solution is hardcode
 
@@ -270,8 +267,6 @@ app.get('/more_app', (req, res) => {
 })
 
 // todo add swagger for api
-
-
 app.get('/', (req, res) => res.send('Hello World!'))
 
 app.listen(3000, () => console.log('Images app listening on port 3000!'))
