@@ -1,3 +1,5 @@
+
+
 // setup server 
 const express = require('express')
 const app = express()
@@ -11,8 +13,6 @@ app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({
     extended: true
 })); // support encoded bodies
-
-
 // setup cloudinary and upload file
 const cloudinary = require('cloudinary');
 const multer = require('multer')
@@ -185,6 +185,8 @@ app.delete('/image', async (req, res) => {
 /**
  * API return the list of all category
  */
+// todo get categories need add thumb image
+
 app.get('/categories', async (req, res) => {
     let result = db.get('images').value()
     const {
@@ -193,16 +195,37 @@ app.get('/categories', async (req, res) => {
     } = req.query
     // get category 
     result = _.uniq(result.map(image => image.category_name))
-    getPaginatedItems(result, page, per_page)
+    result = result.map(category_name => {
+        // get thumb for each category
+        let imageInCategory = db.get('images').filter(img => img.category_name == category_name).value()
+        // get thumb predefine 
+        let thumb = imageInCategory.find(i => i.isFeatureImage)
+        // when not found any thumb we set first image is thumb 
+        thumb = thumb ? thumb.url : _.first(imageInCategory).url
+        return {
+            category_name,
+            thumb
+        }
+    })
+    result = getPaginatedItems(result, page, per_page)
     res.send(result)
 })
+
 
 /**
  * get List Image for Category
  */
 app.get('/category', async (req, res) => {
-    const {category_name} = req.body
-    res.send(db.get('images').filter({category_name})).value()
+    const {
+        category_name,
+        page = 1,
+        per_page = 10
+    } = req.query
+    let categories = db.get('images').filter({
+        category_name
+    }).value()
+    categories = getPaginatedItems(categories, page, per_page)
+    res.send(categories)
 })
 
 function uploadToCloudinary(name, type, buffer, tags) {
@@ -233,6 +256,21 @@ function getPaginatedItems(items = [], page = 1, per_page = 5) {
         data: paginatedItems
     };
 }
+
+// add api to get more app => solution is hardcode
+
+app.get('/more_app', (req, res) => {
+    const apps = [{
+        name: 'ringtone',
+        icon: '',
+        rate: 5,
+        url: ''
+    }]
+    res.send(app);
+})
+
+// todo add swagger for api
+
 
 app.get('/', (req, res) => res.send('Hello World!'))
 
