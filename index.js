@@ -245,6 +245,60 @@ app.get('/category', async (req, res) => {
     res.send(categories)
 })
 
+/**
+ * update category 
+ */
+app.put('/category', (req, res) => {
+    // update all images have same category name match with request
+    try {
+        const {
+            category_name_old,
+            category_name_new
+        } = req.body
+        db.get('images').filter({
+            category_name: category_name_old
+        }).value().map(c => {
+            // update each reacord math with old category to new category name
+            const {
+                public_id
+            } = c
+            db.get('images').find({
+                public_id
+            }).assign({
+                category_name: category_name_new
+            }).write()
+        })
+        res.json({
+            message: `success update from ${category_name_old} => ${category_name_new}`
+        })
+    } catch (error) {
+        console.log(error)
+        res.status(500)
+    }
+});
+
+/**
+ * delete category: => need some advice
+ */
+app.delete('/category', (req, res) => {
+    try {
+        const {category_name} = req.body
+        db.get('images').filter({
+            category_name
+        }).value().map(i => {
+            // delete image from category
+            const { public_id } =  i
+            db.get('images').remove({
+                public_id
+            }).write()
+        })
+        res.json({
+            message: `success delete category : ${category_name}`
+        })
+    } catch (error) {
+        console.log(error)
+    }
+});
 
 /**
  * export database api to backup sometimes
@@ -263,7 +317,7 @@ app.get('/more_app', (req, res) => {
         rate: 5,
         url: ''
     }]
-    res.send(app);
+    res.send(apps);
 })
 
 // todo add swagger for api
