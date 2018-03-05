@@ -35,11 +35,23 @@ const {
     handleError,
     pickMultiple
 } = require('./helper/utils')
+// var pm2 = require('pm2');
+
+// pm2.connect(function () {
+//     pm2.launchBus(function (err, bus) {
+//         bus.on('process:event', function (data) {
+//             if (data.event === "exit") {
+//                 // Do your stuff here ...
+//                 console.log("something")
+//             }
+//         });
+//     });
+// });
 /**
  * upload images to cloudinary
  */
 app.post('/images', upload.array('images'), async (req, res, next) => {
-
+    
     const schema = validator.object().keys({
         tags: validator.string().optional(),
         category_name: validator.string().required()
@@ -204,16 +216,21 @@ app.delete('/image', async (req, res) => {
  * get Detail information for images
  */
 app.get('/image', async (req, res) => {
-    try {
-        const {
-            public_id
-        } = req.query
-        const image = db.get('images').find(img => img.public_id == public_id)
-        res.json(image)
-    } catch (error) {
-        handleError(res, error, req.route.path)
+    const schema = validator.object().keys({
+        public_id: validator.string().required()
+    })
+    const run = async () => {
+        try {
+            const {
+                public_id
+            } = req.query
+            const image = db.get('images').find(img => img.public_id == public_id)
+            res.json(image)
+        } catch (error) {
+            handleError(res, error, req.route.path)
+        }
     }
-
+    validateModel(req.query, schema, res, run)
 })
 /**
  * API return the list of all category
@@ -221,51 +238,68 @@ app.get('/image', async (req, res) => {
 // todo get categories need add thumb image
 
 app.get('/categories', async (req, res) => {
-    try {
-        let result = db.get('images').value()
-        const {
-            page,
-            per_page
-        } = req.query
-        // get category 
-        result = _.uniq(result.map(image => image.category_name))
-        result = result.map(category_name => {
-            // get thumb for each category
-            let imageInCategory = db.get('images').filter(img => img.category_name == category_name).value()
-            // get thumb predefine 
-            let thumb = imageInCategory.find(i => i.isFeatureImage)
-            // when not found any thumb we set first image is thumb 
-            thumb = thumb ? thumb.url : _.first(imageInCategory).url
-            return {
-                category_name,
-                thumb
-            }
-        })
-        result = getPaginatedItems(result, page, per_page)
-        res.send(result)
-    } catch (error) {
-        handleError(res, error, req.route.path)
+    const schema = validator.object().keys({
+        page: validator.number().min(1).optional(),
+        per_page: validator.number().min(1).optional()
+    })
+    const run = () => {
+        try {
+            let result = db.get('images').value()
+            const {
+                page,
+                per_page
+            } = req.query
+            // get category 
+            result = _.uniq(result.map(image => image.category_name))
+            result = result.map(category_name => {
+                // get thumb for each category
+                let imageInCategory = db.get('images').filter(img => img.category_name == category_name).value()
+                // get thumb predefine 
+                let thumb = imageInCategory.find(i => i.isFeatureImage)
+                // when not found any thumb we set first image is thumb 
+                thumb = thumb ? thumb.url : _.first(imageInCategory).url
+                return {
+                    category_name,
+                    thumb
+                }
+            })
+            result = getPaginatedItems(result, page, per_page)
+            res.send(result)
+        } catch (error) {
+            handleError(res, error, req.route.path)
+        }
     }
+    validateModel(req.query, schema, res, run)
+
 })
 /**
  * get List Image for Category
  */
 app.get('/category', async (req, res) => {
-    try {
-        const {
-            category_name,
-            page,
-            per_page
-        } = req.query
-        let categories = db.get('images').filter({
-            category_name
-        }).value()
-        categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url'])
-        categories = getPaginatedItems(categories, page, per_page)
-        res.send(categories)
-    } catch (error) {
-        handleError(res, error, req.route.path)
+    const schema = validator.object().keys({
+        category_name: validator.string().required(),
+        page: validator.number().min(1).optional(),
+        per_page: validator.number().min(1).optional()
+    })
+    const run = async () => {
+        try {
+            const {
+                category_name,
+                page,
+                per_page
+            } = req.query
+            let categories = db.get('images').filter({
+                category_name
+            }).value()
+            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url'])
+            categories = getPaginatedItems(categories, page, per_page)
+            res.send(categories)
+        } catch (error) {
+            handleError(res, error, req.route.path)
+        }
     }
+    validateModel(req.query, schema, res, run)
+
 })
 
 /**
@@ -273,57 +307,71 @@ app.get('/category', async (req, res) => {
  */
 app.put('/category', (req, res) => {
     // update all images have same category name match with request
-    try {
-        const {
-            category_name_old,
-            category_name_new
-        } = req.body
-        db.get('images').filter({
-            category_name: category_name_old
-        }).value().map(c => {
-            // update each reacord math with old category to new category name
+    const schema = validator.object().keys({
+        category_name_old: validator.string().required(),
+        category_name_new: validator.string().required()
+    })
+    const run = async () => {
+        try {
             const {
-                public_id
-            } = c
-            db.get('images').find({
-                public_id
-            }).assign({
-                category_name: category_name_new
-            }).write()
-        })
-        res.json({
-            message: `success update from ${category_name_old} => ${category_name_new}`
-        })
-    } catch (error) {
-        handleError(res, error, req.route.path)
+                category_name_old,
+                category_name_new
+            } = req.body
+            db.get('images').filter({
+                category_name: category_name_old
+            }).value().map(c => {
+                // update each reacord math with old category to new category name
+                const {
+                    public_id
+                } = c
+                db.get('images').find({
+                    public_id
+                }).assign({
+                    category_name: category_name_new
+                }).write()
+            })
+            res.json({
+                message: `success update from ${category_name_old} => ${category_name_new}`
+            })
+        } catch (error) {
+            handleError(res, error, req.route.path)
+        }
     }
+    validateModel(req.body, schema, res, run)
+
 });
 
 /**
  * delete category: => need some advice
  */
 app.delete('/category', (req, res) => {
-    try {
-        const {
-            category_name
-        } = req.body
-        db.get('images').filter({
-            category_name
-        }).value().map(i => {
-            // delete image from category
+    const schema = validator.object().keys({
+        category_name: validator.string().required()
+    })
+    const run = async () => {
+        try {
             const {
-                public_id
-            } = i
-            db.get('images').remove({
-                public_id
-            }).write()
-        })
-        res.json({
-            message: `success delete category : ${category_name}`
-        })
-    } catch (error) {
-        handleError(res, error, req.route.path)
+                category_name
+            } = req.body
+            db.get('images').filter({
+                category_name
+            }).value().map(i => {
+                // delete image from category
+                const {
+                    public_id
+                } = i
+                db.get('images').remove({
+                    public_id
+                }).write()
+            })
+            res.json({
+                message: `success delete category : ${category_name}`
+            })
+        } catch (error) {
+            handleError(res, error, req.route.path)
+        }
     }
+    validateModel(req.body, schema, res, run)
 });
 
 /**
