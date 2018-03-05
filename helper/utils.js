@@ -96,6 +96,18 @@ async function validateModel(source, schema, res, func) {
         await func()
     }
 }
+/**
+ * common handle error 
+ * @param {*} res 
+ * @param {*} error 
+ */
+function handleError(res, error, route){
+
+    console.log(`API exception ${route} : => ${error}`)
+    res.status(500).json({
+        message: "Server error"
+    });
+}
 
 module.exports = {
     uploadToCloudinary,
@@ -104,5 +116,6 @@ module.exports = {
     deleteFileFromCloudinary,
     validator,
     _,
-    validateModel
+    validateModel,
+    handleError
 }

@@ -137,5 +137,13 @@
       "category_name": "random",
       "isFeatureImage": false
     }
+  ],
+  "apps": [
+    {
+      "name": "ringtone",
+      "icon": "",
+      "rate": 5,
+      "url": ""
+  }
   ]
 }
