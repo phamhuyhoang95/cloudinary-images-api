@@ -109,6 +109,15 @@ function handleError(res, error, route){
     });
 }
 
+/**
+ * 
+ * @param {*} array 
+ * @param {*} thingsToPick 
+ */
+function pickMultiple(array, thingsToPick) {
+    return _.map(array, _.partial(_.ary(_.pick, thingsToPick.length), _, thingsToPick));
+  }
+
 module.exports = {
     uploadToCloudinary,
     getPaginatedItems,
@@ -117,5 +126,6 @@ module.exports = {
     validator,
     _,
     validateModel,
-    handleError
+    handleError,
+    pickMultiple
 }

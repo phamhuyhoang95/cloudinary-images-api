@@ -32,7 +32,8 @@ const {
     validator,
     trimArr,
     validateModel,
-    handleError
+    handleError,
+    pickMultiple
 } = require('./helper/utils')
 /**
  * upload images to cloudinary
@@ -104,6 +105,8 @@ app.get('/images', async (req, res, next) => {
             const fuse = new Fuse(result, options)
             // search with query
             result = fuse.search(query)
+            // extract field needed
+            result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url'])
             // paginate data 
             result = getPaginatedItems(result, page, per_page)
             // send back result to client
@@ -257,6 +260,7 @@ app.get('/category', async (req, res) => {
         let categories = db.get('images').filter({
             category_name
         }).value()
+        categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url'])
         categories = getPaginatedItems(categories, page, per_page)
         res.send(categories)
     } catch (error) {
@@ -366,6 +370,7 @@ app.get('/suggestion', (req, res) => {
 });
 
 // todo add swagger for api
+// todo: make api get top category search
 app.get('/', (req, res) => res.send('Welcome to My backend API v2!'))
 
 app.listen(process.env.PORT, () => console.log(`Images app listening on port ${process.env.PORT}!`))
