@@ -1,6 +1,8 @@
 // setup server 
 const express = require('express')
 const app = express()
+app.use(express.static('client'))
+
 // config env
 require('dotenv').config({
     path: '.localenv',
@@ -50,7 +52,7 @@ const {
 /**
  * upload images to cloudinary
  */
-app.post('/images', upload.array('images'), async (req, res, next) => {
+app.post('/images', upload.array('file'), async (req, res, next) => {
     
     const schema = validator.object().keys({
         tags: validator.string().optional(),
@@ -194,8 +196,6 @@ app.delete('/image', async (req, res) => {
     })
     const run = async () => {
         try {
-
-
             const {
                 public_id
             } = req.body
@@ -419,6 +419,6 @@ app.get('/suggestion', (req, res) => {
 
 // todo add swagger for api
 // todo: make api get top category search
-app.get('/', (req, res) => res.send('Welcome to My backend API v2!'))
+app.get('/', (req, res) => res.send('./client/index.html'))
 
 app.listen(process.env.PORT, () => console.log(`Images app listening on port ${process.env.PORT}!`))
