@@ -40,8 +40,8 @@ angular.module('app', ['angularFileUpload'])
       console.info('Before upload', item);
       item.url = `/images`;
       item.formData = [{
-        tags: 'water, girl',
-        category_name: "mysexyimg"
+        tags: $scope.tags || "",
+        category_name: $scope.current_container
       }]
     };
     // --------------------

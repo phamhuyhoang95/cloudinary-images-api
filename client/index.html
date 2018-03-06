@@ -84,6 +84,8 @@
         <h3>Select Container to upload</h3>
         <select class="form-control" ng-options="container_name for container_name  in listContainer" 
         ng-model="container_name" ng-change="change_container(container_name)"></select>
+        <label for="tags">Image Tags</label>
+        <input name="tags"  class="form-control col-md-5" ng-model="tags" type="text"/>
         <h3>Upload queue</h3>
 
         <p>Queue length: {{ uploader.queue.length }}</p>
@@ -159,7 +161,9 @@
         </div>
 
       </div>
-      <div class="col-md-9" style="margin-bottom: 40px" ng-controller="FilesController" data-ng-init="load()">
+    </div>
+    <div class="row">
+      <div class="col-lg-12" style="margin-bottom: 40px" ng-controller="FilesController" data-ng-init="load()">
         <div ng-repeat="container in container_data">
           <h3>Files in the {{container.container_name}}</h3>
 
@@ -168,9 +172,9 @@
             <tbody>
               <tr ng-repeat="file in container.files" style="display: inline-block">
                 <td>
-                  <img ng-src="{{file.url}}" width="50" height="50"> 
+                  <img ng-src="{{file.url}}" width="100" height="100"> 
                   <a href="{{file.url}}">
-                    <strong>{{ file.public_id }}</strong>
+                    <!-- <strong>{{ file.public_id }}</strong> -->
                   </a>
                 </td>
                 <td>
@@ -178,9 +182,11 @@
                     <button type="button" class="btn btn-danger btn-xs" ng-click="delete($index, file.public_id, $parent.$index)"
                       title="Delete the file">
                       <span class="glyphicon glyphicon-trash"></span>
-                      Remove
                     </button>
-
+                    <button type="button" class="btn btn-success btn-xs" data-toggle="modal" data-target="#myModal"
+                    title="Edit image">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                  </button>
                   </td>
                   </button>
                 </td>
@@ -188,16 +194,38 @@
             </tbody>
           </table>
         </div>
-
+        <div id="myModal" class="modal fade" role="dialog">
+          <div class="modal-dialog">
+        
+            <!-- Modal content-->
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Edit image metadata</h4>
+              </div>
+              <div class="modal-body">
+                <div class="form-group">
+                  <label for="category_name">Category name</label>
+                  <input type="text" class="form-control" ng-model="">
+                </div>
+                <div class="form-group">
+                    <label for="category_name">Tags</label>
+                    <input type="text" class="form-control" ng-model="">
+                  </div>
+              </div>
+            
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+        
+          </div>
+        </div>
       </div>
 
     </div>
-
-
   </div>
-
   </div>
-
 </body>
 
 </html>
