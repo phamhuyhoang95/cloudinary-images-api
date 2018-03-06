@@ -292,7 +292,7 @@ app.get('/category', async (req, res) => {
             let categories = db.get('images').filter({
                 category_name
             }).value()
-            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url'])
+            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage'])
             categories = getPaginatedItems(categories, page, per_page)
             res.send(categories)
         } catch (error) {

@@ -16,6 +16,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.5/lodash.js"></script>
   <script src="angular-file-upload.min.js"></script>
   <script src="controllers.js"></script>
+  <script src="sweetalert.min.js"></script>
 
   <style>
     .my-drop-zone {
@@ -36,7 +37,6 @@
     body {
       height: 100%;
     }
-
   </style>
 
 </head>
@@ -82,10 +82,9 @@
       </div>
       <div class="col-md-9" style="margin-bottom: 40px">
         <h3>Select Container to upload</h3>
-        <select class="form-control" ng-options="container_name for container_name  in listContainer" 
-        ng-model="container_name" ng-change="change_container(container_name)"></select>
+        <select class="form-control" ng-options="container_name for container_name  in listContainer" ng-model="container_name" ng-change="change_container(container_name)"></select>
         <label for="tags">Image Tags</label>
-        <input name="tags"  class="form-control col-md-5" ng-model="tags" type="text"/>
+        <input name="tags" class="form-control col-md-5" ng-model="tags" type="text" />
         <h3>Upload queue</h3>
 
         <p>Queue length: {{ uploader.queue.length }}</p>
@@ -156,7 +155,7 @@
             <span class="glyphicon glyphicon-ban-circle"></span> Cancel all
           </button>
           <button type="button" class="btn btn-danger btn-s" ng-click="uploader.clearQueue()" ng-disabled="!uploader.queue.length">
-            <span class="glyphicon glyphicon-trash"></span> Remove all
+            <span class="glyphicon glyphicon-trash"></span> Clean all
           </button>
         </div>
 
@@ -172,21 +171,26 @@
             <tbody>
               <tr ng-repeat="file in container.files" style="display: inline-block">
                 <td>
-                  <img ng-src="{{file.url}}" width="100" height="100"> 
-                  <a href="{{file.url}}">
-                    <!-- <strong>{{ file.public_id }}</strong> -->
+                  <img ng-src="https://images.weserv.nl/?url={{file.url.replace('http://', '')}}&w=150&h=150" width="150" height="150" />
+
+                  <!-- <strong>{{ file.public_id }}</strong> -->
                   </a>
                 </td>
                 <td>
                   <td>
-                    <button type="button" class="btn btn-danger btn-xs" ng-click="delete($index, file.public_id, $parent.$index)"
-                      title="Delete the file">
+                    <button type="button" class="btn btn-danger btn-xs" ng-click="delete($index, file.public_id, $parent.$index)" title="Delete the file">
                       <span class="glyphicon glyphicon-trash"></span>
                     </button>
-                    <button type="button" class="btn btn-success btn-xs" data-toggle="modal" data-target="#myModal"
-                    title="Edit image">
-                    <span class="glyphicon glyphicon-pencil"></span>
-                  </button>
+                    <button type="button" class="btn btn-success btn-xs" ng-click="edit(file)" title="Edit image">
+                      <span class="glyphicon glyphicon-pencil"></span>
+                    </button>
+                    <a  target="_blank" href="{{file.url}}">
+                      <button type="button" class="btn btn-success btn-xs" ng-click="edit(file)" title="Edit image">
+                        <span class="glyphicon glyphicon-resize-full"></span>
+                      </button>
+                    </a>
+
+
                   </td>
                   </button>
                 </td>
@@ -196,7 +200,6 @@
         </div>
         <div id="myModal" class="modal fade" role="dialog">
           <div class="modal-dialog">
-        
             <!-- Modal content-->
             <div class="modal-content">
               <div class="modal-header">
@@ -204,21 +207,28 @@
                 <h4 class="modal-title">Edit image metadata</h4>
               </div>
               <div class="modal-body">
+
                 <div class="form-group">
                   <label for="category_name">Category name</label>
-                  <input type="text" class="form-control" >
+                  <input type="text" ng-model="selectedImg.category_name" class="form-control" />
                 </div>
                 <div class="form-group">
-                    <label for="category_name">Tags</label>
-                    <input type="text" class="form-control">
-                  </div>
+                  <label for="tags">Tags</label>
+                  <input type="text" ng-model="selectedImg.tags" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label class="form-group">
+                    <label for="featureImage">isFeatureImage</label>
+                    <input type="checkbox" ng-model="selectedImg.isFeatureImage" class="form-control" />
+                  </label>
+                </div>
               </div>
-            
               <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" ng-click="saveChange()">Save</button>
               </div>
             </div>
-        
+
           </div>
         </div>
       </div>

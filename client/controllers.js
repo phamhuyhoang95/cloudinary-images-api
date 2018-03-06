@@ -13,6 +13,7 @@ angular.module('app', ['angularFileUpload'])
     $scope.change_container = (container_name) => {
       $scope.current_container = container_name
     }
+
     var uploader = $scope.uploader = new FileUploader({
       scope: $scope, // to automatically update the html. Default: $rootScope
       url: '',
@@ -89,6 +90,51 @@ angular.module('app', ['angularFileUpload'])
     // --------------------
   }).controller('FilesController', function ($scope, $http) {
 
+    $scope.edit = (img) => {
+      //open modal by jquery
+      $scope.selectedImg = img
+      console.log(img)
+      $('#myModal').modal('toggle')
+    }
+    $scope.saveChange = () => {
+      let { category_name, tags, isFeatureImage, public_id } = $scope.selectedImg
+      if(tags instanceof Array){
+        tags = tags.toString()
+      }
+      console.log(category_name, tags, isFeatureImage)
+      swal({
+        title: "Are you sure update this image?",
+        text: "Update can be done immediately!",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+      })
+      .then((willUpdate) => {
+        if (willUpdate) {
+          $http({
+            method: 'PUT',
+            data: JSON.stringify({
+              public_id,
+              category_name,
+              tags,
+              isFeatureImage
+            }),
+            url: '/image',
+            headers: {
+              'Content-Type': 'application/json;charset=utf-8'
+            }
+          }).success(function (data, status, headers) {
+            swal("Poof! Your image has been updated!", {
+              icon: "success",
+            });
+            // reload 
+            $scope.load()
+          });
+        } else {
+          swal("Your image is safe!");
+        }
+      });
+    }
     $scope.load = function () {
       let listContainer
       // get list of containers
@@ -111,17 +157,36 @@ angular.module('app', ['angularFileUpload'])
     };
 
     $scope.delete = function (index, public_id, parentIndex) {
-      $http({
-        method: 'DELETE',
-        data: JSON.stringify({
-          public_id
-        }),
-        url: '/image',
-        headers: {'Content-Type': 'application/json;charset=utf-8'}
-      }).success(function (data, status, headers) {
-        // find file location to delete
-        $scope.container_data[parentIndex].files.splice(index, 1)
-      });
+      swal({
+          title: "Are you sure delete this image?",
+          text: "Once deleted, you will not be able to recover  it!",
+          icon: "warning",
+          buttons: true,
+          dangerMode: true,
+        })
+        .then((willDelete) => {
+          if (willDelete) {
+            $http({
+              method: 'DELETE',
+              data: JSON.stringify({
+                public_id
+              }),
+              url: '/image',
+              headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+              }
+            }).success(function (data, status, headers) {
+              // find file location to delete
+              $scope.container_data[parentIndex].files.splice(index, 1)
+              swal("Poof! Your image has been deleted!", {
+                icon: "success",
+              });
+            });
+          } else {
+            swal("Your image is safe!");
+          }
+        });
+
     };
 
     $scope.$on('uploadCompleted', function (event) {
