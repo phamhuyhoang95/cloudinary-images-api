@@ -26,54 +26,6 @@
       "isFeatureImage": false
     },
     {
-      "public_id": "vlezt",
-      "version": 1520068000,
-      "signature": "045ede220833cf8ea9c7717f813d91bb25bde224",
-      "width": 960,
-      "height": 518,
-      "format": "jpg",
-      "resource_type": "image",
-      "created_at": "2018-03-03T09:06:40Z",
-      "tags": [
-        "lol",
-        "delete",
-        "ezt"
-      ],
-      "bytes": 60062,
-      "type": "upload",
-      "etag": "70c8b21e4d640b10160ee10c5ab68877",
-      "placeholder": false,
-      "url": "http://res.cloudinary.com/nothingatall/image/upload/v1520068000/vlezt.jpg",
-      "secure_url": "https://res.cloudinary.com/nothingatall/image/upload/v1520068000/vlezt.jpg",
-      "original_filename": "file",
-      "category_name": "hoangmaster",
-      "isFeatureImage": false
-    },
-    {
-      "public_id": "abc",
-      "version": 1520170894,
-      "signature": "32c06d50304afaeda8ae1ab00c1cedd87d44d200",
-      "width": 381,
-      "height": 357,
-      "format": "png",
-      "resource_type": "image",
-      "created_at": "2018-03-04T13:41:34Z",
-      "tags": [
-        "dota2",
-        "mylove",
-        "chocolat"
-      ],
-      "bytes": 235015,
-      "type": "upload",
-      "etag": "d094a5b9a2f6a4a38bfe155a16687845",
-      "placeholder": false,
-      "url": "http://res.cloudinary.com/nothingatall/image/upload/v1520170894/abc.png",
-      "secure_url": "https://res.cloudinary.com/nothingatall/image/upload/v1520170894/abc.png",
-      "original_filename": "file",
-      "category_name": "random",
-      "isFeatureImage": false
-    },
-    {
       "public_id": "vlsocola",
       "version": 1520266618,
       "signature": "dc06fddeb3f42c759f24462f7fa490494d419938",
@@ -192,25 +144,26 @@
       "isFeatureImage": false
     },
     {
-      "public_id": "xx",
-      "version": 1520349322,
-      "signature": "be66b697e69b62bde4f7b0fba057c8ac72938d1d",
-      "width": 1920,
-      "height": 1080,
+      "public_id": "unnamed",
+      "version": 1520352451,
+      "signature": "014952462b68e2b1a0dece6c18ed832a8442e281",
+      "width": 525,
+      "height": 350,
       "format": "jpg",
       "resource_type": "image",
-      "created_at": "2018-03-06T15:15:22Z",
+      "created_at": "2018-03-06T16:07:31Z",
       "tags": [
-        "garena"
+        "ticket",
+        "book"
       ],
-      "bytes": 438900,
+      "bytes": 51747,
       "type": "upload",
-      "etag": "f4a821fef267fda875bea8273e2623ac",
+      "etag": "7662bdc114ce84bf2bc2cee250819c3c",
       "placeholder": false,
-      "url": "http://res.cloudinary.com/nothingatall/image/upload/v1520349322/xx.jpg",
-      "secure_url": "https://res.cloudinary.com/nothingatall/image/upload/v1520349322/xx.jpg",
+      "url": "http://res.cloudinary.com/nothingatall/image/upload/v1520352451/unnamed.jpg",
+      "secure_url": "https://res.cloudinary.com/nothingatall/image/upload/v1520352451/unnamed.jpg",
       "original_filename": "file",
-      "category_name": "hoangmaster",
+      "category_name": "random",
       "isFeatureImage": false
     }
   ],

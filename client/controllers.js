@@ -86,6 +86,7 @@ angular.module('app', ['angularFileUpload'])
     // --------------------
     uploader.onCompleteAll = function () {
       console.info('Complete all');
+      $scope.$broadcast('onCompleteAll', 'done')
     };
     // --------------------
   }).controller('FilesController', function ($scope, $http) {
@@ -191,7 +192,10 @@ angular.module('app', ['angularFileUpload'])
 
     $scope.$on('uploadCompleted', function (event) {
       console.log('uploadCompleted event received');
-      $scope.load();
     });
+    $scope.$on('onCompleteAll', function(event) {
+      console.log("done all upload queue")
+      $scope.load()
+    })
 
   });
