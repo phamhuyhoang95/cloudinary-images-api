@@ -260,7 +260,8 @@ app.get('/categories', async (req, res) => {
                 thumb = thumb ? thumb.url : _.first(imageInCategory).url
                 return {
                     category_name,
-                    thumb
+                    thumb,
+                    total_image: imageInCategory.length
                 }
             })
             result = getPaginatedItems(result, page, per_page)
