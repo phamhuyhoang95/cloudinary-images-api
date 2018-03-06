@@ -35,7 +35,8 @@ const {
     trimArr,
     validateModel,
     handleError,
-    pickMultiple
+    pickMultiple,
+    shuffle
 } = require('./helper/utils')
 // var pm2 = require('pm2');
 
@@ -53,7 +54,7 @@ const {
  * upload images to cloudinary
  */
 app.post('/images', upload.array('file'), async (req, res, next) => {
-    
+
     const schema = validator.object().keys({
         tags: validator.string().optional(),
         category_name: validator.string().required()
@@ -416,6 +417,31 @@ app.get('/suggestion', (req, res) => {
     } catch (error) {
         handleError(res, error, req.route.path)
     }
+});
+
+// API get random images
+app.get('/images/random', (req, res) => {
+    const schema = validator.object().keys({
+        page: validator.number().min(1).optional(),
+        per_page: validator.number().min(1).optional()
+    })
+    const run = async () => {
+        try {
+            const {
+                page,
+                per_page
+            } = req.query
+            // make random image 
+            let images = pickMultiple(shuffle(db.get('images').value()), ['public_id', 'category_name', 'tags', 'url'])
+            images = getPaginatedItems(images, page, per_page)
+            res.json(images);
+        } catch (error) {
+            handleError(res, error, req.route.path)
+
+        }
+
+    }
+    validateModel(req.query, schema, res, run)
 });
 
 // todo add swagger for api

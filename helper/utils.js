@@ -1,5 +1,3 @@
-
-
 const cloudinary = require('cloudinary');
 const validator = require('joi')
 const _ = require('lodash')
@@ -37,7 +35,7 @@ function uploadToCloudinary(name, type, buffer, tags) {
  * @param {*} public_id 
  */
 function deleteFileFromCloudinary(public_id) {
-   return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         cloudinary.v2.uploader.destroy(public_id, (err, result) => {
             if (err) {
                 reject(err)
@@ -101,7 +99,7 @@ async function validateModel(source, schema, res, func) {
  * @param {*} res 
  * @param {*} error 
  */
-function handleError(res, error, route){
+function handleError(res, error, route) {
 
     console.log(`API exception ${route} : => ${error}`)
     res.status(500).json({
@@ -116,8 +114,31 @@ function handleError(res, error, route){
  */
 function pickMultiple(array, thingsToPick) {
     return _.map(array, _.partial(_.ary(_.pick, thingsToPick.length), _, thingsToPick));
-  }
+}
 
+/**
+ * make array randomize
+ * @param {*} array 
+ */
+function shuffle(array) {
+    let counter = array.length;
+
+    // While there are elements in the array
+    while (counter > 0) {
+        // Pick a random index
+        let index = Math.floor(Math.random() * counter);
+
+        // Decrease counter by 1
+        counter--;
+
+        // And swap the last element with it
+        let temp = array[counter];
+        array[counter] = array[index];
+        array[index] = temp;
+    }
+
+    return array;
+}
 module.exports = {
     uploadToCloudinary,
     getPaginatedItems,
@@ -127,5 +148,6 @@ module.exports = {
     _,
     validateModel,
     handleError,
-    pickMultiple
+    pickMultiple,
+    shuffle
 }
