@@ -83,7 +83,7 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
             }).write()
             uploadProgress.map(image => {
                 // add category to image 
-                image.category_name = category_name
+                image.category_name = category_name.trim()
                 // default feature image is false 
                 image.isFeatureImage = false
                 // init viewNumber of image

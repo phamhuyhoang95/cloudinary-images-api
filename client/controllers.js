@@ -208,7 +208,8 @@ angular.module('app', ['angularFileUpload'])
         title: "Your file already uploaded! :D",
         icon: "success"
       })
-      $scope.load()
+      // $scope.load()
+      location.reload(); 
     })
 
   });

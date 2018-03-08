@@ -83,8 +83,12 @@
       <div class="col-md-9" style="margin-bottom: 40px">
         <h3>Select Container to upload</h3>
         <select class="form-control" ng-options="container_name for container_name  in listContainer" ng-model="container_name" ng-change="change_container(container_name)"></select>
+        <div class="form-group">
+          <label for="category">Category</label>
+          <input type="text" required name="category" ng-model="current_container" class="form-control col-md-5" />
+        </div>
         <label for="tags">Image Tags</label>
-        <input name="tags" class="form-control col-md-5" ng-model="tags" type="text" />
+        <input name="tags" required class="form-control col-md-5" ng-model="tags" type="text" />
         <h3>Upload queue</h3>
 
         <p>Queue length: {{ uploader.queue.length }}</p>
