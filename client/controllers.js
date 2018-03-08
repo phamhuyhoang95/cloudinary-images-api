@@ -26,6 +26,15 @@ angular.module('app', ['angularFileUpload'])
         customerId: 1
       }
     });
+    // trigger upload all event
+    $scope.uploadAll = () =>{
+      swal({
+        title: "Upload progess is actived ! please wait :D",
+        icon: "warning"
+      })      
+      // call uploadAll func
+      $scope.uploader.uploadAll()
+    }
 
     // ADDING FILTERS
     uploader.filters.push({
@@ -94,7 +103,6 @@ angular.module('app', ['angularFileUpload'])
     $scope.edit = (img) => {
       //open modal by jquery
       $scope.selectedImg = img
-      console.log(img)
       $('#myModal').modal('toggle')
     }
     $scope.saveChange = () => {
@@ -102,7 +110,6 @@ angular.module('app', ['angularFileUpload'])
       if(tags instanceof Array){
         tags = tags.toString()
       }
-      console.log(category_name, tags, isFeatureImage)
       swal({
         title: "Are you sure update this image?",
         text: "Update can be done immediately!",
@@ -195,6 +202,12 @@ angular.module('app', ['angularFileUpload'])
     });
     $scope.$on('onCompleteAll', function(event) {
       console.log("done all upload queue")
+      swal.close()
+      // show success alert
+      swal({
+        title: "Your file already uploaded! :D",
+        icon: "success"
+      })
       $scope.load()
     })
 

@@ -148,7 +148,7 @@
               <div class="progress-bar" role="progressbar" ng-style="{ 'width': uploader.progress + '%' }"></div>
             </div>
           </p>
-          <button type="button" class="btn btn-success btn-s" ng-click="uploader.uploadAll()" ng-disabled="!uploader.getNotUploadedItems().length">
+          <button type="button" class="btn btn-success btn-s" ng-click="uploadAll()" ng-disabled="!uploader.getNotUploadedItems().length">
             <span class="glyphicon glyphicon-upload"></span> Upload all
           </button>
           <button type="button" class="btn btn-warning btn-s" ng-click="uploader.cancelAll()" ng-disabled="!uploader.isUploading">
@@ -185,7 +185,7 @@
                       <span class="glyphicon glyphicon-pencil"></span>
                     </button>
                     <a  target="_blank" href="{{file.url}}">
-                      <button type="button" class="btn btn-success btn-xs" ng-click="edit(file)" title="Edit image">
+                      <button type="button" class="btn btn-success btn-xs" title="Edit image">
                         <span class="glyphicon glyphicon-resize-full"></span>
                       </button>
                     </a>

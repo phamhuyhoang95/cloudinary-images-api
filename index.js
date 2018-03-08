@@ -86,6 +86,8 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
                 image.category_name = category_name
                 // default feature image is false 
                 image.isFeatureImage = false
+                // init viewNumber of image
+                image.viewNumber = 0
                 db.get('images').push(image).write()
             })
             res.send(uploadProgress)
@@ -226,6 +228,12 @@ app.get('/image', async (req, res) => {
                 public_id
             } = req.query
             const image = db.get('images').find(img => img.public_id == public_id)
+            const imageValue = image.value()
+            // incre number of view 
+            image.assign({
+                viewNumber: imageValue.viewNumber ? imageValue.viewNumber + 1 : 1
+            }).write()
+            // return result 
             res.json(image)
         } catch (error) {
             handleError(res, error, req.route.path)
@@ -420,7 +428,7 @@ app.get('/suggestion', (req, res) => {
 });
 
 // API get random images
-app.get('/images/random', (req, res) => {
+app.get('/images/top_search', (req, res) => {
     const schema = validator.object().keys({
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
@@ -432,7 +440,7 @@ app.get('/images/random', (req, res) => {
                 per_page
             } = req.query
             // make random image 
-            let images = pickMultiple(shuffle(db.get('images').value()), ['public_id', 'category_name', 'tags', 'url'])
+            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber']), ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             res.json(images);
         } catch (error) {
