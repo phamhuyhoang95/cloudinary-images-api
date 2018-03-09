@@ -139,6 +139,12 @@ function shuffle(array) {
 
     return array;
 }
+
+function optimiseUrl(public_id, file_type ){
+    const options = 'p_auto:low'
+    let url  = `http://res.cloudinary.com/nothingatall/image/upload/${options}/${public_id}.${file_type}`
+    return url
+}
 module.exports = {
     uploadToCloudinary,
     getPaginatedItems,
@@ -149,5 +155,6 @@ module.exports = {
     validateModel,
     handleError,
     pickMultiple,
-    shuffle
+    shuffle,
+    url
 }

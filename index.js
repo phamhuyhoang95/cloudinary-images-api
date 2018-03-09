@@ -90,7 +90,7 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
                 image.viewNumber = 0
                 db.get('images').push(image).write()
             })
-            res.send(uploadProgress)
+            res.json(uploadProgress)
         } catch (error) {
             handleError(res, error, req.route.path)
         }
@@ -127,7 +127,7 @@ app.get('/images', async (req, res, next) => {
             // paginate data 
             result = getPaginatedItems(result, page, per_page)
             // send back result to client
-            res.send(result)
+            res.json(result)
 
         } catch (error) {
             handleError(res, error, req.route.path)
@@ -208,7 +208,7 @@ app.delete('/image', async (req, res) => {
             db.get('images').remove({
                 public_id
             }).write()
-            res.send(cloudinaryMessage);
+            res.json(cloudinaryMessage);
         } catch (error) {
             handleError(res, error, req.route.path)
         }
@@ -274,7 +274,7 @@ app.get('/categories', async (req, res) => {
                 }
             })
             result = getPaginatedItems(result, page, per_page)
-            res.send(result)
+            res.json(result)
         } catch (error) {
             handleError(res, error, req.route.path)
         }
@@ -303,7 +303,7 @@ app.get('/category', async (req, res) => {
             }).value()
             categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage'])
             categories = getPaginatedItems(categories, page, per_page)
-            res.send(categories)
+            res.json(categories)
         } catch (error) {
             handleError(res, error, req.route.path)
         }
@@ -402,7 +402,7 @@ app.get("/export/db", async (req, res) => {
 app.get('/more_app', (req, res) => {
     try {
         const apps = db.get('apps').value()
-        res.send(apps);
+        res.json(apps);
     } catch (error) {
         handleError(res, error, req.route.path)
     }
