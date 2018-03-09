@@ -36,7 +36,8 @@ const {
     validateModel,
     handleError,
     pickMultiple,
-    shuffle
+    shuffle,
+    optimizeUrl
 } = require('./helper/utils')
 // var pm2 = require('pm2');
 
@@ -82,6 +83,8 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
                 images: []
             }).write()
             uploadProgress.map(image => {
+                // add optimize url
+                image.optimizeUrl = optimizeUrl(image.public_id, image.format)
                 // add category to image 
                 image.category_name = category_name.trim()
                 // default feature image is false 
