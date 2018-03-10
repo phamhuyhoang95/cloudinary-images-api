@@ -146,7 +146,7 @@ angular.module('app', ['angularFileUpload'])
     $scope.load = function () {
       let listContainer
       // get list of containers
-      $http.get('/categories').then(resp => {
+      $http.get('/categories?per_page=1000').then(resp => {
         listContainer = resp.data.data.map(d => d.category_name)
         // get all files for each container 
         return Promise.all(listContainer.map(container_name => $http.get(`/category?category_name=${container_name}&per_page=10000`)))
