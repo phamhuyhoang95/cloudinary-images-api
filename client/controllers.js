@@ -149,7 +149,7 @@ angular.module('app', ['angularFileUpload'])
       $http.get('/categories').then(resp => {
         listContainer = resp.data.data.map(d => d.category_name)
         // get all files for each container 
-        return Promise.all(listContainer.map(container_name => $http.get(`/category?category_name=${container_name}`)))
+        return Promise.all(listContainer.map(container_name => $http.get(`/category?category_name=${container_name}&per_page=10000`)))
       }).then(resp => {
 
         const file_inside_container = resp.map(f => f.data.data)
