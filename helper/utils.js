@@ -1,6 +1,10 @@
+const crypto = require('crypto');
+
 const cloudinary = require('cloudinary');
 const validator = require('joi')
 const _ = require('lodash')
+var Memcached = require('memcached');
+var memcached = new Memcached(process.env.MEMCACHE_URL, {})
 
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -79,9 +83,10 @@ function trimArr(arr) {
  * @param {*} source : source data to validate
  * @param {*} schema : validate template
  * @param {*} res : response from server
- * @param {*} func: function callback after validate
+ * @param {*} func: function callback after 
+ * @param {*} route: route of api
  */
-async function validateModel(source, schema, res, func) {
+async function validateModel(source, schema, res, func, route) {
     var error = validator.validate(source, schema).error,
         verbosity = !error || error.details
     if (error && verbosity) {
@@ -91,7 +96,15 @@ async function validateModel(source, schema, res, func) {
             verbosity: verbosity
         });
     } else {
-        await func()
+        // cache data to fast return response
+        let result
+        if (route) {
+            const cacheKey = buildCacheKey(route, source)
+            result = await cacheExcute(cacheKey, func)
+        }else{
+            result =  await func()
+        }
+        res.json(result)
     }
 }
 /**
@@ -100,7 +113,6 @@ async function validateModel(source, schema, res, func) {
  * @param {*} error 
  */
 function handleError(res, error, route) {
-
     console.log(`API exception ${route} : => ${error}`)
     res.status(500).json({
         message: "Server error"
@@ -140,9 +152,48 @@ function shuffle(array) {
     return array;
 }
 
-function optimizeUrl(public_id, file_type ){
+async function cacheExcute(key, fn) {
+    // when data exist 
+    const getter = await new Promise((resolve, reject) => {
+        memcached.get(key, (err, data) => {
+            if (err) {
+                reject(err)
+            }
+            resolve(data)
+        })
+    })
+    if (!getter) {
+        // cache when data not cached 
+        const val = await fn()
+        // we don't need trigger when cache is saved
+        const lifetime = parseInt(process.env.TTL)
+        memcached.set(key, val, 60,  (err, result) =>{
+        })
+        return val
+    }
+    return getter
+}
+
+/**
+ * build cache key with request and params
+ * 
+ * @param {*} requestName 
+ * @param {*} requestObj 
+ */
+function buildCacheKey(requestName, requestObj) {
+    const cacheKey = JSON.stringify({
+        requestName,
+        requestObj
+    })
+    const hash = crypto.createHmac('sha256', process.env.HASH_SECRET).
+        update(cacheKey).
+        digest('hex')
+    return hash
+}
+
+function optimizeUrl(public_id, file_type) {
     const options = 'p_auto:good'
-    let url  = `http://res.cloudinary.com/nothingatall/image/upload/${options}/${public_id}.${file_type}`
+    let url = `http://res.cloudinary.com/nothingatall/image/upload/${options}/${public_id}.${file_type}`
     return url
 }
 module.exports = {
@@ -156,5 +207,7 @@ module.exports = {
     handleError,
     pickMultiple,
     shuffle,
-    optimizeUrl
+    optimizeUrl,
+    cacheExcute,
+    buildCacheKey
 }

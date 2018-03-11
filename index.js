@@ -23,6 +23,7 @@ const FileSync = require('lowdb/adapters/FileSync')
 const adapter = new FileSync(process.env.DB_PATH)
 const db = low(adapter)
 
+
 // addition lib
 
 const Fuse = require('fuse.js')
@@ -37,7 +38,8 @@ const {
     handleError,
     pickMultiple,
     shuffle,
-    optimizeUrl
+    optimizeUrl,
+    buildCacheKey
 } = require('./helper/utils')
 // var pm2 = require('pm2');
 
@@ -60,6 +62,7 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
         tags: validator.string().optional(),
         category_name: validator.string().required()
     })
+    const path = req.route.path
     const run = async () => {
         try {
             let {
@@ -95,7 +98,7 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
             })
             res.json(uploadProgress)
         } catch (error) {
-            handleError(res, error, req.route.path)
+            handleError(res, error, path)
         }
     }
     validateModel(req.body, schema, res, run)
@@ -110,6 +113,7 @@ app.get('/images', async (req, res, next) => {
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
+    const path =  req.route.path
     const run = async () => {
         try {
             let {
@@ -130,13 +134,12 @@ app.get('/images', async (req, res, next) => {
             // paginate data 
             result = getPaginatedItems(result, page, per_page)
             // send back result to client
-            res.json(result)
-
+            return result
         } catch (error) {
-            handleError(res, error, req.route.path)
+            handleError(res, error, path)
         }
     }
-    validateModel(req.query, schema, res, run)
+    validateModel(req.query, schema, res, run, path)
 
 })
 
@@ -225,6 +228,8 @@ app.get('/image', async (req, res) => {
     const schema = validator.object().keys({
         public_id: validator.string().required()
     })
+    const path =  req.route.path
+
     const run = async () => {
         try {
             const {
@@ -239,10 +244,10 @@ app.get('/image', async (req, res) => {
             // return result 
             res.json(image)
         } catch (error) {
-            handleError(res, error, req.route.path)
+            handleError(res, error, path)
         }
     }
-    validateModel(req.query, schema, res, run)
+    validateModel(req.query, schema, res, run, path)
 })
 /**
  * API return the list of all category
@@ -254,6 +259,8 @@ app.get('/categories', async (req, res) => {
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
+    const path =  req.route.path
+
     const run = () => {
         try {
             let result = db.get('images').value()
@@ -277,12 +284,12 @@ app.get('/categories', async (req, res) => {
                 }
             })
             result = getPaginatedItems(result, page, per_page)
-            res.json(result)
+            return result
         } catch (error) {
-            handleError(res, error, req.route.path)
+            handleError(res, error, path)
         }
     }
-    validateModel(req.query, schema, res, run)
+    validateModel(req.query, schema, res, run, path)
 
 })
 /**
@@ -294,6 +301,7 @@ app.get('/category', async (req, res) => {
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
+    const path = req.route.path
     const run = async () => {
         try {
             const {
@@ -306,12 +314,12 @@ app.get('/category', async (req, res) => {
             }).value()
             categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage'])
             categories = getPaginatedItems(categories, page, per_page)
-            res.json(categories)
+            return categories
         } catch (error) {
-            handleError(res, error, req.route.path)
+            handleError(res, error, path)
         }
     }
-    validateModel(req.query, schema, res, run)
+    validateModel(req.query, schema, res, run, path)
 
 })
 
@@ -436,6 +444,8 @@ app.get('/images/top_search', (req, res) => {
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
+    const path =  req.route.path
+
     const run = async () => {
         try {
             const {
@@ -445,14 +455,14 @@ app.get('/images/top_search', (req, res) => {
             // make random image 
             let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber']), ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
-            res.json(images);
+            return images
         } catch (error) {
-            handleError(res, error, req.route.path)
+            handleError(res, error, path)
 
         }
 
     }
-    validateModel(req.query, schema, res, run)
+    validateModel(req.query, schema, res, run, path)
 });
 
 // todo add swagger for api
