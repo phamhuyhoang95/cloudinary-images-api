@@ -130,7 +130,7 @@ app.get('/images', async (req, res, next) => {
             // search with query
             result = fuse.search(query)
             // extract field needed
-            result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url'])
+            result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url', 'optimizeUrl'])
             // paginate data 
             result = getPaginatedItems(result, page, per_page)
             // send back result to client
@@ -312,7 +312,7 @@ app.get('/category', async (req, res) => {
             let categories = db.get('images').filter({
                 category_name
             }).value()
-            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage'])
+            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage', 'optimizeUrl'])
             categories = getPaginatedItems(categories, page, per_page)
             return categories
         } catch (error) {
@@ -453,7 +453,7 @@ app.get('/images/top_search', (req, res) => {
                 per_page
             } = req.query
             // make random image 
-            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber']), ['viewNumber'], ['desc'])
+            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber', 'optimizeUrl']), ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             return images
         } catch (error) {
