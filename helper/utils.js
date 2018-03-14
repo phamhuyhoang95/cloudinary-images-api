@@ -192,7 +192,7 @@ function buildCacheKey(requestName, requestObj) {
 }
 
 function optimizeUrl(public_id, file_type) {
-    const options = 'p_auto:good'
+    const options = 'q_auto:best'
     let url = `http://res.cloudinary.com/nothingatall/image/upload/${options}/${public_id}.${file_type}`
     return url
 }
