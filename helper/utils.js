@@ -3,9 +3,9 @@ const crypto = require('crypto');
 const cloudinary = require('cloudinary');
 const validator = require('joi')
 const _ = require('lodash')
-var Memcached = require('memcached');
-var memcached = new Memcached(process.env.MEMCACHE_URL, {})
-
+const Memcached = require('memcached');
+const memcached = new Memcached(process.env.MEMCACHE_URL, {})
+const request = require('request-promise')
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
     api_key: process.env.API_KEY,
@@ -101,8 +101,8 @@ async function validateModel(source, schema, res, func, route) {
         if (route) {
             const cacheKey = buildCacheKey(route, source)
             result = await cacheExcute(cacheKey, func)
-        }else{
-            result =  await func()
+        } else {
+            result = await func()
         }
         res.json(result)
     }
@@ -167,8 +167,7 @@ async function cacheExcute(key, fn) {
         const val = await fn()
         // we don't need trigger when cache is saved
         const lifetime = parseInt(process.env.TTL)
-        memcached.set(key, val, 60,  (err, result) =>{
-        })
+        memcached.set(key, val, 60, (err, result) => {})
         return val
     }
     return getter
@@ -186,8 +185,8 @@ function buildCacheKey(requestName, requestObj) {
         requestObj
     })
     const hash = crypto.createHmac('sha256', process.env.HASH_SECRET).
-        update(cacheKey).
-        digest('hex')
+    update(cacheKey).
+    digest('hex')
     return hash
 }
 
@@ -195,6 +194,51 @@ function optimizeUrl(public_id, file_type) {
     const options = 'q_auto:best'
     let url = `http://res.cloudinary.com/nothingatall/image/upload/${options}/${public_id}.${file_type}`
     return url
+}
+
+async function sendNotification(title, content, type) {
+
+    const apiKey = process.env.ONE_SIGNAL_API_KEY
+    const appId = process.env.ONE_SIGNAL_APP_ID
+    const headers = {
+        "Content-Type": "application/json; charset=utf-8",
+        "Authorization": `Basic ${apiKey}`
+    };
+
+    const options = {
+        port: 443,
+        uri: "https://onesignal.com/api/v1/notifications",
+        method: "POST",
+        headers: headers,
+        body: {
+            app_id: appId,
+            headings: {
+                'en': title
+            },
+            contents: {
+                'en': content
+            },
+            included_segments: ["All"],
+            data: {
+                type
+            }
+        },
+        json: true
+    };
+    switch (type) {
+        case 0: // just a something new 
+            break;
+        case 1: // when have some image new
+            break;
+        case 2: // when have category new
+        case 3: // when category update 
+            options.body.data.category_name = ''
+            break;
+        default:
+            break;
+    }
+    const body = await request(options)
+    return body
 }
 module.exports = {
     uploadToCloudinary,
@@ -209,5 +253,6 @@ module.exports = {
     shuffle,
     optimizeUrl,
     cacheExcute,
-    buildCacheKey
+    buildCacheKey,
+    sendNotification
 }
