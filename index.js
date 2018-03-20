@@ -39,7 +39,8 @@ const {
     pickMultiple,
     shuffle,
     optimizeUrl,
-    buildCacheKey
+    buildCacheKey,
+    sendNotification
 } = require('./helper/utils')
 // var pm2 = require('pm2');
 
@@ -113,7 +114,7 @@ app.get('/images', async (req, res, next) => {
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
-    const path =  req.route.path
+    const path = req.route.path
     const run = async () => {
         try {
             let {
@@ -130,7 +131,7 @@ app.get('/images', async (req, res, next) => {
             // search with query
             result = fuse.search(query)
             // extract field needed
-            result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url'])
+            result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url', 'optimizeUrl'])
             // paginate data 
             result = getPaginatedItems(result, page, per_page)
             // send back result to client
@@ -228,7 +229,7 @@ app.get('/image', async (req, res) => {
     const schema = validator.object().keys({
         public_id: validator.string().required()
     })
-    const path =  req.route.path
+    const path = req.route.path
 
     const run = async () => {
         try {
@@ -259,7 +260,7 @@ app.get('/categories', async (req, res) => {
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
-    const path =  req.route.path
+    const path = req.route.path
 
     const run = () => {
         try {
@@ -312,7 +313,7 @@ app.get('/category', async (req, res) => {
             let categories = db.get('images').filter({
                 category_name
             }).value()
-            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage'])
+            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage', 'optimizeUrl'])
             categories = getPaginatedItems(categories, page, per_page)
             return categories
         } catch (error) {
@@ -444,8 +445,8 @@ app.get('/images/top_search', (req, res) => {
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
-    const path =  req.route.path
 
+    const path = req.route.path
     const run = async () => {
         try {
             const {
@@ -453,7 +454,7 @@ app.get('/images/top_search', (req, res) => {
                 per_page
             } = req.query
             // make random image 
-            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber']), ['viewNumber'], ['desc'])
+            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber', 'optimizeUrl']), ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             return images
         } catch (error) {
@@ -464,6 +465,62 @@ app.get('/images/top_search', (req, res) => {
     }
     validateModel(req.query, schema, res, run, path)
 });
+
+// API get newest images by upload time
+
+app.get('/images/newest', (req, res) => {
+    const path = req.route.path
+
+    const schema = validator.object().keys({
+        page: validator.number().min(1).optional(),
+        per_page: validator.number().min(1).optional()
+    })
+    const run = async () => {
+        try {
+            const {
+                page,
+                per_page
+            } = req.query
+            // get all from db 
+            let images = db.get('images').value().map(image => {
+                image.created_at = new Date(image.created_at).getTime()
+                return image
+            })
+            images = _.orderBy(images, ['created_at'], ['desc'])
+            images = getPaginatedItems(images, page, per_page)
+            return images
+        } catch (error) {
+            handleError(res, error, path)
+        }
+    }
+    validateModel(req.query, schema, res, run, path)
+
+});
+
+// API send notification for all user 
+app.post('/notification', (req, res) => {
+    const schema = validator.object().keys({
+        title: validator.string().required(),
+        content: validator.string().required(),
+        type: validator.number().min(0).max(3).required(),
+        category_name: validator.string().optional()
+    })
+    const path = req.route.path
+    const run = () => {
+        try {
+
+            const {
+                title,
+                content,
+                type
+            } = req.body
+            return sendNotification(title, content, type)
+        } catch (error) {
+            handleError(res, error, path)
+        }
+    }
+    validateModel(req.body, schema, res, run)
+})
 
 // todo add swagger for api
 // todo: make api get top category search
