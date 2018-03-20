@@ -512,9 +512,10 @@ app.post('/notification', (req, res) => {
             const {
                 title,
                 content,
-                type
+                type,
+                category_name
             } = req.body
-            return sendNotification(title, content, type)
+            return sendNotification(title, content, type, category_name)
         } catch (error) {
             handleError(res, error, path)
         }
