@@ -167,7 +167,7 @@ async function cacheExcute(key, fn) {
         const val = await fn()
         // we don't need trigger when cache is saved
         const lifetime = parseInt(process.env.TTL)
-        memcached.set(key, val, 60, (err, result) => {})
+        memcached.set(key, val, lifetime, (err, result) => {})
         return val
     }
     return getter
