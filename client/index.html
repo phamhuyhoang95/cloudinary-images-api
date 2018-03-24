@@ -167,13 +167,14 @@
     </div>
     <div class="row">
       <div class="col-lg-12" style="margin-bottom: 40px" ng-controller="FilesController" data-ng-init="load()">
-        <div ng-repeat="container in container_data">
-          <h3>Files in the {{container.container_name}}</h3>
+          <select class="form-control" ng-options="container as  container.container_name for container  in container_data" ng-model="container" ng-change="showImages(container)"></select>
+        <div ng-show="isShow">
+          <h3>Files in the {{currentShowContainerName}}</h3>
 
           <table class="table">
 
             <tbody>
-              <tr ng-repeat="file in container.files" style="display: inline-block">
+              <tr ng-repeat="file in currentShowImages" style="display: inline-block">
                 <td>
                   <img ng-src="https://images.weserv.nl/?url={{file.url.replace('http://', '')}}&w=150&h=150" width="150" height="150" />
 

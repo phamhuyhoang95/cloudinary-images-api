@@ -5,7 +5,7 @@ angular.module('app', ['angularFileUpload'])
     'use strict';
 
     // create a uploader with options
-    $http.get('/categories').then(resp => {
+    $http.get('/categories?per_page=1000').then(resp => {
       $scope.listContainer = resp.data.data.map(d => d.category_name)
       // init container to upload
       $scope.current_container = _.first($scope.listContainer)
@@ -104,6 +104,11 @@ angular.module('app', ['angularFileUpload'])
       //open modal by jquery
       $scope.selectedImg = img
       $('#myModal').modal('toggle')
+    }
+    $scope.showImages = (container) => {
+      $scope.isShow = container ? true : false
+      $scope.currentShowContainerName = container.container_name
+      $scope.currentShowImages = container.files
     }
     $scope.saveChange = () => {
       let { category_name, tags, isFeatureImage, public_id } = $scope.selectedImg
