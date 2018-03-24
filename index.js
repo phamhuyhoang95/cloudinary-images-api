@@ -27,6 +27,7 @@ const db = low(adapter)
 // addition lib
 
 const Fuse = require('fuse.js')
+const shortid = require('shortid')
 const {
     uploadToCloudinary,
     deleteFileFromCloudinary,
@@ -82,10 +83,14 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
                 const resource_type = 'image'
                 return uploadToCloudinary(fileName, resource_type, buffer, tags)
             }))
+
             // insert to db after upload success to cloudinary
             db.defaults({
                 images: []
             }).write()
+            // check category is exist or not
+            const existRecord = db.get('images').find(image => image.category_name == category_name).value()
+            const category_id = existRecord ? existRecord.category_id : shortid.generate()
             uploadProgress.map(image => {
                 // add optimize url
                 image.optimizeUrl = optimizeUrl(image.public_id, image.format)
@@ -95,7 +100,11 @@ app.post('/images', upload.array('file'), async (req, res, next) => {
                 image.isFeatureImage = false
                 // init viewNumber of image
                 image.viewNumber = 0
+                // assaign category_id
+                image.category_id = category_id
+                // save change to database
                 db.get('images').push(image).write()
+                return image
             })
             res.json(uploadProgress)
         } catch (error) {
@@ -112,7 +121,8 @@ app.get('/images', async (req, res, next) => {
     const schema = validator.object().keys({
         query: validator.string().required(),
         page: validator.number().min(1).optional(),
-        per_page: validator.number().min(1).optional()
+        per_page: validator.number().min(1).optional(),
+        category_id: validator.string().optional()
     })
     const path = req.route.path
     const run = async () => {
@@ -120,22 +130,28 @@ app.get('/images', async (req, res, next) => {
             let {
                 page,
                 per_page,
-                query
+                query,
+                category_id
             } = req.query
             // select image by matching category
             let result = db.get("images").value()
-            const options = {
-                keys: ['category_name', 'tags']
+            if(category_id){
+                return result.filter(r => r.category_id == category_id)
+            }else{
+                const options = {
+                    keys: ['category_name', 'tags']
+                }
+                const fuse = new Fuse(result, options)
+                // search with query
+                result = fuse.search(query)
+                // extract field needed
+                result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url', 'optimizeUrl', 'category_id'])
+                // paginate data 
+                result = getPaginatedItems(result, page, per_page)
+                // send back result to client
+                return result
             }
-            const fuse = new Fuse(result, options)
-            // search with query
-            result = fuse.search(query)
-            // extract field needed
-            result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url', 'optimizeUrl'])
-            // paginate data 
-            result = getPaginatedItems(result, page, per_page)
-            // send back result to client
-            return result
+
         } catch (error) {
             handleError(res, error, path)
         }
@@ -150,7 +166,7 @@ app.get('/images', async (req, res, next) => {
 app.put('/image', async (req, res) => {
     const schema = validator.object().keys({
         public_id: validator.string().required(),
-        category_name: validator.string().optional(),
+        // category_name: validator.string().optional(),
         tags: validator.string().optional(),
         isFeatureImage: validator.boolean().optional() // if true make this image become feature images
     })
@@ -166,11 +182,11 @@ app.put('/image', async (req, res) => {
                 public_id
             })
             // change category name 
-            if (category_name) {
-                foundImage.assign({
-                    category_name
-                }).write()
-            }
+            // if (category_name) {
+            //     foundImage.assign({
+            //         category_name
+            //     }).write()
+            // }
             // change tags
             if (tags) {
                 tags = trimArr(tags.split(',')),
@@ -270,16 +286,23 @@ app.get('/categories', async (req, res) => {
                 per_page
             } = req.query
             // get category 
-            result = _.uniq(result.map(image => image.category_name))
-            result = result.map(category_name => {
+            result = _.uniqBy(result.map(image => {
+                return {
+                    category_name: image.category_name,
+                    category_id: image.category_id
+                }
+            }), 'category_id')
+            result = result.map(category => {
+                const {category_name, category_id } = category
                 // get thumb for each category
-                let imageInCategory = db.get('images').filter(img => img.category_name == category_name).value()
+                let imageInCategory = db.get('images').filter(img => img.category_id == category_id).value()
                 // get thumb predefine 
                 let thumb = imageInCategory.find(i => i.isFeatureImage)
                 // when not found any thumb we set first image is thumb 
                 thumb = thumb ? thumb.url : _.first(imageInCategory).url
                 return {
                     category_name,
+                    category_id,
                     thumb,
                     total_image: imageInCategory.length
                 }
@@ -291,14 +314,13 @@ app.get('/categories', async (req, res) => {
         }
     }
     validateModel(req.query, schema, res, run, path)
-
 })
 /**
  * get List Image for Category
  */
 app.get('/category', async (req, res) => {
     const schema = validator.object().keys({
-        category_name: validator.string().required(),
+        category_id: validator.string().required(),
         page: validator.number().min(1).optional(),
         per_page: validator.number().min(1).optional()
     })
@@ -306,14 +328,14 @@ app.get('/category', async (req, res) => {
     const run = async () => {
         try {
             const {
-                category_name,
+                category_id,
                 page,
                 per_page
             } = req.query
             let categories = db.get('images').filter({
-                category_name
+                category_id
             }).value()
-            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage', 'optimizeUrl'])
+            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage', 'optimizeUrl', 'category_id'])
             categories = getPaginatedItems(categories, page, per_page)
             return categories
         } catch (error) {
@@ -331,16 +353,18 @@ app.put('/category', (req, res) => {
     // update all images have same category name match with request
     const schema = validator.object().keys({
         category_name_old: validator.string().required(),
+        category_id: validator.string().required(),
         category_name_new: validator.string().required()
     })
     const run = async () => {
         try {
             const {
                 category_name_old,
-                category_name_new
+                category_name_new,
+                category_id
             } = req.body
             db.get('images').filter({
-                category_name: category_name_old
+                category_id
             }).value().map(c => {
                 // update each reacord math with old category to new category name
                 const {
@@ -364,19 +388,22 @@ app.put('/category', (req, res) => {
 });
 
 /**
- * delete category: => need some advice
+ * delete category: => need some advice 
  */
 app.delete('/category', (req, res) => {
     const schema = validator.object().keys({
-        category_name: validator.string().required()
+        category_name: validator.string().required(),
+        category_id: validator.string().required()
     })
     const run = async () => {
         try {
             const {
-                category_name
+                category_name,
+                category_id
             } = req.body
             db.get('images').filter({
-                category_name
+                category_name,
+                category_id
             }).value().map(i => {
                 // delete image from category
                 const {
@@ -425,10 +452,13 @@ app.get('/more_app', (req, res) => {
 app.get('/suggestion', (req, res) => {
     try {
         let tags = [],
-            categories = _.uniq(db.get('images').value().map(img => {
+            categories = _.uniqBy(db.get('images').value().map(img => {
                 tags = tags.concat(img.tags)
-                return img.category_name
-            }))
+                return {
+                    category_name: img.category_name,
+                    category_id: img.category_id
+                } 
+            }), 'category_id')
         tags = _.uniq(tags)
         res.json({
             categories,
@@ -454,7 +484,7 @@ app.get('/images/top_search', (req, res) => {
                 per_page
             } = req.query
             // make random image 
-            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber', 'optimizeUrl']), ['viewNumber'], ['desc'])
+            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber', 'optimizeUrl', 'category_id']), ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             return images
         } catch (error) {
@@ -494,7 +524,6 @@ app.get('/images/newest', (req, res) => {
         }
     }
     validateModel(req.query, schema, res, run, path)
-
 });
 
 // API send notification for all user 
@@ -503,7 +532,7 @@ app.post('/notification', (req, res) => {
         title: validator.string().required(),
         content: validator.string().required(),
         type: validator.number().min(0).max(3).required(),
-        category_name: validator.string().optional()
+        category_id: validator.string().optional()
     })
     const path = req.route.path
     const run = () => {
@@ -513,9 +542,9 @@ app.post('/notification', (req, res) => {
                 title,
                 content,
                 type,
-                category_name
+                category_id
             } = req.body
-            return sendNotification(title, content, type, category_name)
+            return sendNotification(title, content, type, category_id)
         } catch (error) {
             handleError(res, error, path)
         }

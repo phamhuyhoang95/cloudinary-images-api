@@ -196,7 +196,7 @@ function optimizeUrl(public_id, file_type) {
     return url
 }
 
-async function sendNotification(title, content, type, category_name) {
+async function sendNotification(title, content, type, category_id) {
     const apiKey = process.env.ONE_SIGNAL_API_KEY
     const appId = process.env.ONE_SIGNAL_APP_ID
     const headers = {
@@ -231,7 +231,7 @@ async function sendNotification(title, content, type, category_name) {
             break;
         case 2: // when have category new
         case 3: // when category update 
-            options.body.data.category_name = category_name
+            options.body.data.category_id = category_id
             break;
         default:
             break;
