@@ -23,6 +23,9 @@ const FileSync = require('lowdb/adapters/FileSync')
 const adapter = new FileSync(process.env.DB_PATH)
 const db = low(adapter)
 
+const {
+    taskRunner
+} = require('./helper/task')
 
 // addition lib
 
@@ -527,4 +530,9 @@ app.post('/notification', (req, res) => {
 // todo: make api get top category search
 app.get('/', (req, res) => res.send('./client/index.html'))
 
-app.listen(process.env.PORT, () => console.log(`Images app listening on port ${process.env.PORT}!`))
+app.listen(process.env.PORT, () => {
+    console.log(`Images app listening on port ${process.env.PORT}!`)
+    // start backup task
+    console.log("taskRunner running")
+    taskRunner.start()
+})

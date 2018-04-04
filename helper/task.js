@@ -57,5 +57,6 @@ var job = new CronJob(`0 0 */${process.env.BACKUP_TIME} * * *`, function () {
     false, /* Start the job right now */
     // timeZone /* Time zone of this job. */
 );
-console.log("prepare for start")
-job.start()
+module.exports = {
+    taskRunner: job
+}
