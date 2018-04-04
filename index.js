@@ -457,7 +457,8 @@ app.get('/images/top_search', (req, res) => {
                 per_page
             } = req.query
             // make random image 
-            let images = _.orderBy(pickMultiple(db.get('images').value(), ['public_id', 'category_name', 'tags', 'url', 'viewNumber', 'optimizeUrl']), ['viewNumber'], ['desc'])
+            const dataSource =  db.get('images').value()
+            let images = _.orderBy(dataSource, ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             return images
         } catch (error) {
