@@ -316,7 +316,11 @@ app.get('/category', async (req, res) => {
             let categories = db.get('images').filter({
                 category_name
             }).value()
-            categories = pickMultiple(categories, ['public_id', 'category_name', 'tags', 'url', 'isFeatureImage', 'optimizeUrl'])
+            categories = categories.map(image => {
+                image.created_at = new Date(image.created_at).getTime()
+                return image
+            })
+            categories = _.orderBy(categories, ['created_at'], ['desc'])
             categories = getPaginatedItems(categories, page, per_page)
             return categories
         } catch (error) {
@@ -457,7 +461,7 @@ app.get('/images/top_search', (req, res) => {
                 per_page
             } = req.query
             // make random image 
-            const dataSource =  db.get('images').value()
+            const dataSource = db.get('images').value()
             let images = _.orderBy(dataSource, ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             return images
