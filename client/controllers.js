@@ -216,5 +216,9 @@ angular.module('app', ['angularFileUpload'])
       // $scope.load()
       location.reload(); 
     })
+    // show image size 
+    $scope.imageSize = (size) =>{
+      return Math.ceil(size/1024).toString().concat(" kb")
+    }
 
   });
