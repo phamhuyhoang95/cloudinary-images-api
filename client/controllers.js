@@ -109,6 +109,7 @@ angular.module('app', ['angularFileUpload'])
       $scope.isShow = container ? true : false
       $scope.currentShowContainerName = container.container_name
       $scope.currentShowImages = container.files
+      $scope.currentFeatureImages = container.files.filter( img => img.isFeatureImage === true )
     }
     $scope.saveChange = () => {
       let { category_name, tags, isFeatureImage, public_id } = $scope.selectedImg
@@ -140,6 +141,8 @@ angular.module('app', ['angularFileUpload'])
             swal("Poof! Your image has been updated!", {
               icon: "success",
             });
+            $('#myModal').modal('toggle')
+            swal.close()
             // reload 
             $scope.load()
           });
@@ -201,7 +204,6 @@ angular.module('app', ['angularFileUpload'])
         });
 
     };
-
     $scope.$on('uploadCompleted', function (event) {
       console.log('uploadCompleted event received');
     });

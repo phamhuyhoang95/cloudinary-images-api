@@ -181,14 +181,12 @@ app.put('/image', async (req, res) => {
                         tags
                     }).write()
             }
-            if (isFeatureImage) {
-                // toggle flag feature image
-                foundImage.assign({
-                    isFeatureImage: !foundImage.value().isFeatureImage
-                }).write()
-                // update all image of this category to false
-                // const featureImages = db.get('images').filter({category_name}).assign({})
-            }
+            // toggle flag feature image
+            foundImage.assign({
+                isFeatureImage: !foundImage.value().isFeatureImage
+            }).write()
+            // update all image of this category to false
+            // const featureImages = db.get('images').filter({category_name}).assign({})
             res.status('200').json({
                 code: 200,
                 message: `success update image with public_id = ${public_id}`,
@@ -327,7 +325,7 @@ app.get('/category', async (req, res) => {
             handleError(res, error, path)
         }
     }
-    validateModel(req.query, schema, res, run, path)
+    validateModel(req.query, schema, res, run)
 
 })
 

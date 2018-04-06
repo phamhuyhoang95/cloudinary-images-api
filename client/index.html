@@ -175,6 +175,41 @@
           <table class="table">
 
             <tbody>
+              <h4 style="color: red"> Feature Images </h2>
+                <tr ng-repeat="file in currentFeatureImages " style="display: inline-block">
+                  <td>
+                    <img ng-src="https://images.weserv.nl/?url={{file.url.replace('http://', '')}}&w=150&h=150" width="150" height="150" />
+
+                    <!-- <strong>{{ file.public_id }}</strong> -->
+                    </a>
+                  </td>
+                  <td>
+                    <td>
+                      <button type="button" class="btn btn-danger btn-xs" ng-click="delete($index, file.public_id, $parent.$index)" title="Delete the file">
+                        <span class="glyphicon glyphicon-trash"></span>
+                      </button>
+                      <button type="button" class="btn btn-success btn-xs" ng-click="edit(file)" title="Edit image">
+                        <span class="glyphicon glyphicon-pencil"></span>
+                      </button>
+                      <a target="_blank" href="{{file.url}}">
+                        <button type="button" class="btn btn-success btn-xs" title="Edit image">
+                          <span class="glyphicon glyphicon-resize-full"></span>
+                        </button>
+                      </a>
+                      <button ng-if="file.isFeatureImage" type="button" class="btn btn-warning btn-xs">
+                        <span class="glyphicon glyphicon-heart"></span>
+                      </button>
+                      <br>
+                      <span> {{imageSize(file.bytes)}} </span>
+
+                    </td>
+                  </td>
+                </tr>
+            </tbody>
+          </table>
+          <table class="table">
+            <tbody>
+              <h4 style="color: red">All Images </h4>
               <tr ng-repeat="file in currentShowImages" style="display: inline-block">
                 <td>
                   <img ng-src="https://images.weserv.nl/?url={{file.url.replace('http://', '')}}&w=150&h=150" width="150" height="150" />
@@ -195,7 +230,9 @@
                         <span class="glyphicon glyphicon-resize-full"></span>
                       </button>
                     </a>
-                    <span ng-if="file.isFeatureImage" class="glyphicon glyphicon-heart"></span>
+                    <button ng-if="file.isFeatureImage" type="button" class="btn btn-warning btn-xs">
+                      <span class="glyphicon glyphicon-heart"></span>
+                    </button>
                     <br>
                     <span> {{imageSize(file.bytes)}} </span>
 
