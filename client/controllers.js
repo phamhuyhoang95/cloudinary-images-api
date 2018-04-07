@@ -99,6 +99,7 @@ angular.module('app', ['angularFileUpload'])
     };
     // --------------------
   }).controller('FilesController', function ($scope, $http) {
+    $scope.totalSizeImage = 0
 
     $scope.edit = (img) => {
       //open modal by jquery
@@ -156,6 +157,7 @@ angular.module('app', ['angularFileUpload'])
           }
         });
     }
+
     $scope.load = function () {
       let listContainer
       // get list of containers
@@ -164,13 +166,15 @@ angular.module('app', ['angularFileUpload'])
         // get all files for each container 
         return Promise.all(listContainer.map(container_name => $http.get(`/category?category_name=${container_name}&per_page=10000`)))
       }).then(resp => {
-
         const file_inside_container = resp.map(f => f.data.data)
         $scope.container_data = listContainer.map((container_name, idx) => {
 
           return {
             container_name,
-            files: file_inside_container[idx]
+            files: file_inside_container[idx].map(img => {
+              $scope.totalSizeImage += img.bytes
+              return img
+            })
           }
         })
         // match container with file 
@@ -203,7 +207,7 @@ angular.module('app', ['angularFileUpload'])
           // swal("Poof! Your image has been deleted!", {
           //   icon: "success",
           // });
-        }else{
+        } else {
           swal("Backend Error")
         }
       });
@@ -261,8 +265,21 @@ angular.module('app', ['angularFileUpload'])
       location.reload();
     })
     // show image size 
-    $scope.imageSize = (size) => {
-      return Math.ceil(size / 1024).toString().concat(" kb")
+    $scope.imageSize = (size, unit) => {
+      let factor = 1024
+      switch (unit) {
+        case 'kb':
+          break;
+        case 'mb':
+        factor = Math.pow(factor, 2)
+          break;
+        case 'gb':
+        factor = Math.pow(factor, 3)
+          break
+        default:
+          break;
+      }
+      return Math.round(size / factor).toString().concat(` ${unit}`)
     }
 
   });
