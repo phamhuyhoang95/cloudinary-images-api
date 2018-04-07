@@ -177,36 +177,40 @@ angular.module('app', ['angularFileUpload'])
       })
     };
 
-    $scope.delete = function (index, public_id, parentIndex) {
-      swal({
-          title: "Are you sure delete this image?",
-          text: "Once deleted, you will not be able to recover  it!",
-          icon: "warning",
-          buttons: true,
-          dangerMode: true,
-        })
-        .then((willDelete) => {
-          if (willDelete) {
-            $http({
-              method: 'DELETE',
-              data: JSON.stringify({
-                public_id
-              }),
-              url: '/image',
-              headers: {
-                'Content-Type': 'application/json;charset=utf-8'
-              }
-            }).success(function (data, status, headers) {
-              // find file location to delete
-              $scope.container_data[parentIndex].files.splice(index, 1)
-              swal("Poof! Your image has been deleted!", {
-                icon: "success",
-              });
-            });
-          } else {
-            swal("Your image is safe!");
-          }
-        });
+    $scope.delete = function (index, public_id) {
+      // swal({
+      //     title: "Are you sure delete this image?",
+      //     text: "Once deleted, you will not be able to recover  it!",
+      //     icon: "warning",
+      //     buttons: true,
+      //     dangerMode: true,
+      //   })
+      //   .then((willDelete) => {
+      //     if (willDelete) {
+      $http({
+        method: 'DELETE',
+        data: JSON.stringify({
+          public_id
+        }),
+        url: '/image',
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8'
+        }
+      }).success(function (data, status, headers) {
+        // find file location to delete
+        if (status == 200) {
+          $scope.currentShowImages.splice(index, 1)
+          // swal("Poof! Your image has been deleted!", {
+          //   icon: "success",
+          // });
+        }else{
+          swal("Backend Error")
+        }
+      });
+      //   } else {
+      //     swal("Your image is safe!");
+      //   }
+      // });
 
     };
     // push notification to user

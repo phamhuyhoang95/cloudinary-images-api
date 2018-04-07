@@ -165,7 +165,7 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-lg-12" style="margin-bottom: 40px" ng-controller="FilesController" data-ng-init="load()">
+      <div class="col-lg-12" style="margin-bottom: 40px" ng-controller="FilesController"  data-ng-init="load()">
         <select class="form-control" ng-options="container as  container.container_name for container  in container_data" ng-model="container"
           ng-change="showImages(container)"></select>
         <div ng-show="isShow">
@@ -184,7 +184,7 @@
                   </td>
                   <td>
                     <td>
-                      <button type="button" class="btn btn-danger btn-xs" ng-click="delete($index, file.public_id, $parent.$index)" title="Delete the file">
+                      <button type="button" class="btn btn-danger btn-xs" ng-click="delete($index, file.public_id)" title="Delete the file">
                         <span class="glyphicon glyphicon-trash"></span>
                       </button>
                       <button type="button" class="btn btn-success btn-xs" ng-click="edit(file)" title="Edit image">
@@ -200,7 +200,6 @@
                       </button>
                       <br>
                       <span> {{imageSize(file.bytes)}} </span>
-
                     </td>
                   </td>
                 </tr>
@@ -234,6 +233,8 @@
                     </button>
                     <br>
                     <span> {{imageSize(file.bytes)}} </span>
+                    <br/>
+                    <span> View : {{file.viewNumber}}</span>
 
                   </td>
                 </td>
