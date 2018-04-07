@@ -27,11 +27,11 @@ angular.module('app', ['angularFileUpload'])
       }
     });
     // trigger upload all event
-    $scope.uploadAll = () =>{
+    $scope.uploadAll = () => {
       swal({
         title: "Upload progess is actived ! please wait :D",
         icon: "warning"
-      })      
+      })
       // call uploadAll func
       $scope.uploader.uploadAll()
     }
@@ -109,47 +109,52 @@ angular.module('app', ['angularFileUpload'])
       $scope.isShow = container ? true : false
       $scope.currentShowContainerName = container.container_name
       $scope.currentShowImages = container.files
-      $scope.currentFeatureImages = container.files.filter( img => img.isFeatureImage === true )
+      $scope.currentFeatureImages = container.files.filter(img => img.isFeatureImage === true)
     }
     $scope.saveChange = () => {
-      let { category_name, tags, isFeatureImage, public_id } = $scope.selectedImg
-      if(tags instanceof Array){
+      let {
+        category_name,
+        tags,
+        isFeatureImage,
+        public_id
+      } = $scope.selectedImg
+      if (tags instanceof Array) {
         tags = tags.toString()
       }
       swal({
-        title: "Are you sure update this image?",
-        text: "Update can be done immediately!",
-        icon: "warning",
-        buttons: true,
-        dangerMode: true,
-      })
-      .then((willUpdate) => {
-        if (willUpdate) {
-          $http({
-            method: 'PUT',
-            data: JSON.stringify({
-              public_id,
-              category_name,
-              tags,
-              isFeatureImage
-            }),
-            url: '/image',
-            headers: {
-              'Content-Type': 'application/json;charset=utf-8'
-            }
-          }).success(function (data, status, headers) {
-            swal("Poof! Your image has been updated!", {
-              icon: "success",
+          title: "Are you sure update this image?",
+          text: "Update can be done immediately!",
+          icon: "warning",
+          buttons: true,
+          dangerMode: true,
+        })
+        .then((willUpdate) => {
+          if (willUpdate) {
+            $http({
+              method: 'PUT',
+              data: JSON.stringify({
+                public_id,
+                category_name,
+                tags,
+                isFeatureImage
+              }),
+              url: '/image',
+              headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+              }
+            }).success(function (data, status, headers) {
+              swal("Poof! Your image has been updated!", {
+                icon: "success",
+              });
+              $('#myModal').modal('toggle')
+              swal.close()
+              // reload 
+              $scope.load()
             });
-            $('#myModal').modal('toggle')
-            swal.close()
-            // reload 
-            $scope.load()
-          });
-        } else {
-          swal("Your image is safe!");
-        }
-      });
+          } else {
+            swal("Your image is safe!");
+          }
+        });
     }
     $scope.load = function () {
       let listContainer
@@ -204,10 +209,43 @@ angular.module('app', ['angularFileUpload'])
         });
 
     };
+    // push notification to user
+    $scope.pushNotification = () => {
+      swal({
+          title: "Send notification now?",
+          text: "Once notification send , you will not be able to rollback!",
+          icon: "warning",
+          buttons: true,
+          dangerMode: true,
+        })
+        .then((willSend) => {
+          if (willSend) {
+            $http({
+              method: 'POST',
+              data: JSON.stringify($scope.notification),
+              url: '/notification',
+              headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+              }
+            }).success((data, status, headers) => {
+              if (status == 200) {
+                swal("Poof! Your notification has been send!", {
+                  icon: "success",
+                });
+                $('#notificationModal').modal('toggle')
+                $scope.notification = {}
+
+              }
+            })
+          } else {
+            swal("Notification Cancelled!");
+          }
+        });
+    }
     $scope.$on('uploadCompleted', function (event) {
       console.log('uploadCompleted event received');
     });
-    $scope.$on('onCompleteAll', function(event) {
+    $scope.$on('onCompleteAll', function (event) {
       console.log("done all upload queue")
       swal.close()
       // show success alert
@@ -216,11 +254,11 @@ angular.module('app', ['angularFileUpload'])
         icon: "success"
       })
       // $scope.load()
-      location.reload(); 
+      location.reload();
     })
     // show image size 
-    $scope.imageSize = (size) =>{
-      return Math.ceil(size/1024).toString().concat(" kb")
+    $scope.imageSize = (size) => {
+      return Math.ceil(size / 1024).toString().concat(" kb")
     }
 
   });
