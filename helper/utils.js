@@ -64,7 +64,8 @@ function deleteFileFromCloudinary(public_id) {
 function buildCacheKey(requestName, requestObj) {
     const cacheKey = JSON.stringify({
         requestName,
-        requestObj
+        requestObj,
+        prefix: process.env.APP_PREFIX
     })
     const hash = crypto
         .createHmac('sha256', process.env.HASH_SECRET)
