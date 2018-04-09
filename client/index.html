@@ -170,11 +170,12 @@
             <h3>Total Image Size => {{imageSize(totalSizeImage, 'mb')}}</h2>
 
         </div>
-        <select class="form-control" ng-options="container as  container.container_name for container  in container_data" ng-model="container"
+        <select class="form-control" ng-options="container as  container.category_name for container  in container_data" ng-model="container"
           ng-change="showImages(container)"></select>
         <div ng-show="isShow">
           <h3>Files in the {{currentShowContainerName}}</h3>
-
+          <button class="btn btn-danger" ng-click="removeCategory(container.category_id, container.category_name)">Delete Category</button>
+          <button class="btn btn-success">Update Category</button>
           <table class="table">
             <tbody>
               <h4 style="color: red"> Feature Images </h2>

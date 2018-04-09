@@ -111,13 +111,12 @@ angular.module('app', ['angularFileUpload'])
     }
     $scope.showImages = (container) => {
       $scope.isShow = container ? true : false
-      $scope.currentShowContainerName = container.container_name
+      $scope.currentShowContainerName = container.category_name
       $scope.currentShowImages = container.files
       $scope.currentFeatureImages = container.files.filter(img => img.isFeatureImage === true)
     }
     $scope.saveChange = () => {
       let {
-        category_name,
         tags,
         isFeatureImage,
         public_id
@@ -138,7 +137,6 @@ angular.module('app', ['angularFileUpload'])
               method: 'PUT',
               data: JSON.stringify({
                 public_id,
-                category_name,
                 tags,
                 isFeatureImage
               }),
@@ -161,19 +159,60 @@ angular.module('app', ['angularFileUpload'])
         });
     }
 
+    $scope.removeCategory = (category_id, category_name)  =>{
+
+      swal({
+        title: `Are you sure delete category ${category_name} ?`,
+        text: "Once deleted, you will not be able to recover  it!",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+      })
+      .then((willDelete) => {
+        if (willDelete) {
+          $http({
+            method: 'DELETE',
+            data: JSON.stringify({
+              category_id,
+              category_name
+            }),
+            url: '/category',
+            headers: {
+              'Content-Type': 'application/json;charset=utf-8'
+            }
+          }).success(function (data, status, headers) {
+            // find file location to delete
+            swal("Poof! Your category has been deleted!", {
+              icon: "success",
+            });
+            setTimeout(() =>{
+            // reload
+            location.reload();
+            }, 1000)
+
+
+          });
+        } else {
+          swal("Your category is safe!");
+        }
+      });
+
+    }
+
     $scope.load = function () {
       let listContainer
       // get list of containers
       $http.get('/categories?per_page=1000').then(resp => {
-        listContainer = resp.data.data.map(d => d.category_name)
+        listContainer = resp.data.data
         // get all files for each container 
-        return Promise.all(listContainer.map(container_name => $http.get(`/category?category_name=${container_name}&per_page=10000`)))
+        return Promise.all(listContainer.map(container => $http.get(`/category?category_id=${container.category_id}&per_page=10000`)))
       }).then(resp => {
         const file_inside_container = resp.map(f => f.data.data)
-        $scope.container_data = listContainer.map((container_name, idx) => {
-
+        $scope.container_data = listContainer.map((container, idx) => {
+          const {category_name, category_id } = container
           return {
-            container_name,
+            category_name,
+            category_id,
             files: file_inside_container[idx].map(img => {
               $scope.totalSizeImage += img.bytes
               return img
@@ -258,12 +297,13 @@ angular.module('app', ['angularFileUpload'])
     });
     $scope.$on('onCompleteAll', function (event) {
       console.log("done all upload queue")
-      swal.close()
       // show success alert
       swal({
         title: "Your file already uploaded! :D",
         icon: "success"
       })
+      swal.close()
+
       // $scope.load()
       location.reload();
     })

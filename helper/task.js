@@ -22,7 +22,7 @@ const job = new CronJob(
         const options = {
             method: 'GET',
             hostname: 'localhost',
-            port: '3000',
+            port: process.env.PORT,
             path: '/export/db',
             headers: {
                 'cache-control': 'no-cache',

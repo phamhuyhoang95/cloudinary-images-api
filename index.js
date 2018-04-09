@@ -34,7 +34,7 @@ const adapter = new FileSync(process.env.DB_PATH)
 const db = low(adapter)
 
 // addition lib
-
+const shortid = require('shortid')
 const Fuse = require('fuse.js')
 const {
     uploadToCloudinary,
@@ -95,6 +95,14 @@ app.post('/images', upload.array('file'), async (req, res) => {
                     images: []
                 })
                 .write()
+            // check category is exist or not
+            const existRecord = db
+                .get('images')
+                .find(image => image.category_name === category_name)
+                .value()
+            const category_id = existRecord
+                ? existRecord.category_id
+                : shortid.generate()
             uploadProgress.map(image => {
                 // add optimize url
                 image.optimizeUrl = optimizeUrl(image.public_id, image.format)
@@ -104,6 +112,8 @@ app.post('/images', upload.array('file'), async (req, res) => {
                 image.isFeatureImage = false
                 // init viewNumber of image
                 image.viewNumber = 0
+                // add category_id
+                image.category_id = category_id
                 return db
                     .get('images')
                     .push(image)
@@ -130,14 +140,18 @@ app.get('/images', async (req, res) => {
         per_page: validator
             .number()
             .min(1)
-            .optional()
+            .optional(),
+        category_id: validator.string().optional()
     })
     const { path } = req.route.path
     const run = async () => {
         try {
-            const { page, per_page, query } = req.query
+            const { page, per_page, query, category_id } = req.query
             // select image by matching category
             let result = db.get('images').value()
+            if (category_id) {
+                return result.filter(r => r.category_id === category_id)
+            }
             const options = {
                 keys: ['category_name', 'tags']
             }
@@ -170,24 +184,23 @@ app.get('/images', async (req, res) => {
 app.put('/image', async (req, res) => {
     const schema = validator.object().keys({
         public_id: validator.string().required(),
-        category_name: validator.string().optional(),
         tags: validator.string().optional(),
         isFeatureImage: validator.boolean().optional() // if true make this image become feature images
     })
     const run = async () => {
         try {
-            let { category_name, tags, public_id } = req.body
+            let { tags, public_id } = req.body
             const foundImage = db.get('images').find({
                 public_id
             })
             // change category name
-            if (category_name) {
-                foundImage
-                    .assign({
-                        category_name
-                    })
-                    .write()
-            }
+            // if (category_name) {
+            //     foundImage
+            //         .assign({
+            //             category_name
+            //         })
+            //         .write()
+            // }
             // change tags
             if (tags) {
                 tags = trimArr(tags.split(','))
@@ -285,34 +298,40 @@ app.get('/categories', async (req, res) => {
         per_page: validator
             .number()
             .min(1)
+            .optional(),
+        numberImageView: validator
+            .number()
+            .min(10)
             .optional()
     })
     const { path } = req.route.path
-
     const run = () => {
         try {
             let result = db.get('images').value()
-            const { page, per_page } = req.query
+            const finalResult = []
+            const { page, per_page, numberImageView } = req.query
             // get category
-            result = _.uniq(result.map(image => image.category_name))
-            result = result.map(category_name => {
-                // get thumb for each category
-                const imageInCategory = db
-                    .get('images')
-                    .filter(img => img.category_name === category_name)
-                    .value()
-                // get thumb predefine
-                let thumb = imageInCategory.find(i => i.isFeatureImage)
-                // when not found any thumb we set first image is thumb
-                thumb = thumb ? thumb.url : _.first(imageInCategory).url
-                return {
-                    category_name,
-                    thumb,
-                    total_image: imageInCategory.length
-                }
+            result = _.groupBy(result, 'category_id')
+            _.forOwn(result, (images, category_id) => {
+                // get list image for category
+                let imageInCategory = images.map(image => {
+                    image.created_at = new Date(image.created_at).getTime()
+                    return image
+                })
+                imageInCategory = _.orderBy(
+                    imageInCategory,
+                    ['created_at'],
+                    ['desc']
+                )
+
+                imageInCategory = _.take(imageInCategory, numberImageView || 10)
+                finalResult.push({
+                    category_id,
+                    category_name: _.first(imageInCategory).category_name,
+                    imageInCategory
+                })
             })
-            result = getPaginatedItems(result, page, per_page)
-            return result
+            return getPaginatedItems(finalResult, page, per_page)
         } catch (error) {
             handleError(res, error, path)
         }
@@ -325,7 +344,7 @@ app.get('/categories', async (req, res) => {
  */
 app.get('/category', async (req, res) => {
     const schema = validator.object().keys({
-        category_name: validator.string().required(),
+        category_id: validator.string().required(),
         page: validator
             .number()
             .min(1)
@@ -338,11 +357,11 @@ app.get('/category', async (req, res) => {
     const { path } = req.route.path
     const run = async () => {
         try {
-            const { category_name, page, per_page } = req.query
+            const { category_id, page, per_page } = req.query
             let categories = db
                 .get('images')
                 .filter({
-                    category_name
+                    category_id
                 })
                 .value()
             categories = categories.map(image => {
@@ -367,15 +386,20 @@ app.put('/category', (req, res) => {
     // update all images have same category name match with request
     const schema = validator.object().keys({
         category_name_old: validator.string().required(),
+        category_id: validator.string().required(),
         category_name_new: validator.string().required()
     })
     const run = async () => {
         try {
-            const { category_name_old, category_name_new } = req.body
+            const {
+                category_name_old,
+                category_name_new,
+                category_id
+            } = req.body
             db
                 .get('images')
                 .filter({
-                    category_name: category_name_old
+                    category_id
                 })
                 .value()
                 .map(c => {
@@ -406,20 +430,27 @@ app.put('/category', (req, res) => {
  */
 app.delete('/category', (req, res) => {
     const schema = validator.object().keys({
-        category_name: validator.string().required()
+        category_name: validator.string().required(),
+        category_id: validator.string().required()
     })
     const run = async () => {
         try {
-            const { category_name } = req.body
+            const { category_name, category_id } = req.body
+            const imageShoudBeDeleted = []
             db
                 .get('images')
                 .filter({
-                    category_name
+                    category_id
                 })
                 .value()
                 .map(i => {
                     // delete image from category
                     const { public_id } = i
+                    // delete image by public_id
+                    imageShoudBeDeleted.push(
+                        deleteFileFromCloudinary(public_id)
+                    )
+
                     return db
                         .get('images')
                         .remove({
@@ -427,6 +458,8 @@ app.delete('/category', (req, res) => {
                         })
                         .write()
                 })
+            // wait for all image deleted
+            await Promise.all(imageShoudBeDeleted)
             res.json({
                 message: `success delete category : ${category_name}`
             })
@@ -470,7 +503,7 @@ app.get('/suggestion', (req, res) => {
                 .value()
                 .map(img => {
                     tags = tags.concat(img.tags)
-                    return img.category_name
+                    return _.pick(img, ['category_id', 'category_name'])
                 })
         )
         tags = _.uniq(tags)
@@ -500,7 +533,6 @@ app.get('/images/top_search', (req, res) => {
     const run = async () => {
         try {
             const { page, per_page } = req.query
-            // make random image
             // make random image
             const dataSource = db.get('images').value()
             let images = _.orderBy(dataSource, ['viewNumber'], ['desc'])

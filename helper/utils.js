@@ -1,6 +1,4 @@
 /* eslint camelcase: 0 */ // --> OFF
-/* eslint camelcase: 0 */ // --> OFF
-
 const crypto = require('crypto')
 const cloudinary = require('cloudinary')
 const validator = require('joi')
@@ -103,12 +101,14 @@ async function cacheExcute(key, fn) {
  * @param {*} perPage
  */
 function getPaginatedItems(items = [], page = 1, perPage = 5) {
-    const offset = (page - 1) * perPage
-    const take = offset + perPage
+    const pageNumber = parseInt(page)
+    const numberItem = parseInt(perPage)
+    const offset = (pageNumber - 1) * numberItem
+    const take = offset + numberItem
     const paginatedItems = _.uniq(_.slice(items, offset, take))
     return {
-        page: parseInt(page),
-        perPage: parseInt(perPage),
+        page: pageNumber,
+        perPage: numberItem,
         total: items.length,
         total_pages: Math.ceil(items.length / perPage),
         data: paginatedItems
