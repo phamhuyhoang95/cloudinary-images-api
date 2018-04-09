@@ -41,7 +41,9 @@ const job = new CronJob(
                 cloudinary.v2.uploader
                     .upload_stream(
                         {
-                            public_id: `data-${dates}.json`,
+                            public_id: `${
+                                process.env.TASK_PREFIX
+                            }-${dates}.json`,
                             resource_type: 'auto',
                             folder: 'backup'
                         },
