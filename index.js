@@ -13,6 +13,7 @@ require('dotenv').config({
     silent: true
 })
 const bodyParser = require('body-parser')
+const { taskRunner } = require('./helper/task')
 
 app.use(bodyParser.json()) // support json encoded bodies
 app.use(
@@ -175,7 +176,7 @@ app.put('/image', async (req, res) => {
     })
     const run = async () => {
         try {
-            let { category_name, tags, public_id, isFeatureImage } = req.body
+            let { category_name, tags, public_id } = req.body
             const foundImage = db.get('images').find({
                 public_id
             })
@@ -196,16 +197,13 @@ app.put('/image', async (req, res) => {
                     })
                     .write()
             }
-            if (isFeatureImage) {
-                // toggle flag feature image
-                foundImage
-                    .assign({
-                        isFeatureImage: !foundImage.value().isFeatureImage
-                    })
-                    .write()
-                // update all image of this category to false
-                // const featureImages = db.get('images').filter({category_name}).assign({})
-            }
+            // toggle flag feature image
+            foundImage
+                .assign({
+                    isFeatureImage: !foundImage.value().isFeatureImage
+                })
+                .write()
+
             res.status('200').json({
                 code: 200,
                 message: `success update image with public_id = ${public_id}`
@@ -256,7 +254,7 @@ app.get('/image', async (req, res) => {
             const { public_id } = req.query
             const image = db
                 .get('images')
-                .find(img => img.public_id == public_id)
+                .find(img => img.public_id === public_id)
             const imageValue = image.value()
             // incre number of view
             image
@@ -277,7 +275,6 @@ app.get('/image', async (req, res) => {
 /**
  * API return the list of all category
  */
-// todo get categories need add thumb image
 
 app.get('/categories', async (req, res) => {
     const schema = validator.object().keys({
@@ -302,7 +299,7 @@ app.get('/categories', async (req, res) => {
                 // get thumb for each category
                 const imageInCategory = db
                     .get('images')
-                    .filter(img => img.category_name == category_name)
+                    .filter(img => img.category_name === category_name)
                     .value()
                 // get thumb predefine
                 let thumb = imageInCategory.find(i => i.isFeatureImage)
@@ -348,14 +345,11 @@ app.get('/category', async (req, res) => {
                     category_name
                 })
                 .value()
-            categories = pickMultiple(categories, [
-                'public_id',
-                'category_name',
-                'tags',
-                'url',
-                'isFeatureImage',
-                'optimizeUrl'
-            ])
+            categories = categories.map(image => {
+                image.created_at = new Date(image.created_at).getTime()
+                return image
+            })
+            categories = _.orderBy(categories, ['created_at'], ['desc'])
             categories = getPaginatedItems(categories, page, per_page)
             return categories
         } catch (error) {
@@ -439,7 +433,6 @@ app.delete('/category', (req, res) => {
         } catch (error) {
             handleError(res, error, req.route.path)
         }
-        return {}
     }
     validateModel(req.body, schema, res, run)
 })
@@ -508,18 +501,9 @@ app.get('/images/top_search', (req, res) => {
         try {
             const { page, per_page } = req.query
             // make random image
-            let images = _.orderBy(
-                pickMultiple(db.get('images').value(), [
-                    'public_id',
-                    'category_name',
-                    'tags',
-                    'url',
-                    'viewNumber',
-                    'optimizeUrl'
-                ]),
-                ['viewNumber'],
-                ['desc']
-            )
+            // make random image
+            const dataSource = db.get('images').value()
+            let images = _.orderBy(dataSource, ['viewNumber'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             return images
         } catch (error) {
@@ -596,6 +580,9 @@ app.post('/notification', (req, res) => {
 // todo: make api get top category search
 app.get('/', (req, res) => res.send('./client/index.html'))
 
-app.listen(process.env.PORT, () =>
+app.listen(process.env.PORT, () => {
     console.log(`Images app listening on port ${process.env.PORT}!`)
-)
+    // start backup task
+    console.log('taskRunner running')
+    taskRunner.start()
+})

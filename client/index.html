@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html id="ng-app" ng-app="app">
 <!-- id="ng-app" IE<8 -->
 
@@ -51,17 +51,16 @@
       <div class="navbar-header">
         <a class="navbar-brand" href="https://github.com/phamhuyhoang95/cloudinary-images-api">Upload Storage Service - Cloudinary</a>
       </div>
+      <div class="navbar-header">
+      </div>
     </div>
 
+    <button class="btn btn-success" data-toggle="modal" data-target="#notificationModal">Notification</button>
 
     <div class="row">
-
       <div class="col-md-3">
-
         <img ng-src="{{image}}"> </img>
-
         <h3>Select files</h3>
-
         <div ng-show="uploader.isHTML5">
           <!-- 3. nv-file-over | nv-file-over="className" -->
           <div class="well my-drop-zone" nv-file-over uploader="uploader">
@@ -148,7 +147,7 @@
           <p>
             Queue progress:
 
-            <div class="progress" style="">
+            <div class="progress" >
               <div class="progress-bar" role="progressbar" ng-style="{ 'width': uploader.progress + '%' }"></div>
             </div>
           </p>
@@ -167,13 +166,51 @@
     </div>
     <div class="row">
       <div class="col-lg-12" style="margin-bottom: 40px" ng-controller="FilesController" data-ng-init="load()">
-          <select class="form-control" ng-options="container as  container.container_name for container  in container_data" ng-model="container" ng-change="showImages(container)"></select>
+        <div class="alert alert-warning">
+            <h3>Total Image Size => {{imageSize(totalSizeImage, 'mb')}}</h2>
+
+        </div>
+        <select class="form-control" ng-options="container as  container.container_name for container  in container_data" ng-model="container"
+          ng-change="showImages(container)"></select>
         <div ng-show="isShow">
           <h3>Files in the {{currentShowContainerName}}</h3>
 
           <table class="table">
-
             <tbody>
+              <h4 style="color: red"> Feature Images </h2>
+                <tr ng-repeat="file in currentFeatureImages " style="display: inline-block">
+                  <td>
+                    <img ng-src="https://images.weserv.nl/?url={{file.url.replace('http://', '')}}&w=150&h=150" width="150" height="150" />
+
+                    <!-- <strong>{{ file.public_id }}</strong> -->
+                    </a>
+                  </td>
+                  <td>
+                    <td>
+                      <button type="button" class="btn btn-danger btn-xs" ng-click="delete($index, file.public_id)" title="Delete the file">
+                        <span class="glyphicon glyphicon-trash"></span>
+                      </button>
+                      <button type="button" class="btn btn-success btn-xs" ng-click="edit(file)" title="Edit image">
+                        <span class="glyphicon glyphicon-pencil"></span>
+                      </button>
+                      <a target="_blank" href="{{file.url}}">
+                        <button type="button" class="btn btn-success btn-xs" title="Edit image">
+                          <span class="glyphicon glyphicon-resize-full"></span>
+                        </button>
+                      </a>
+                      <button ng-if="file.isFeatureImage" type="button" class="btn btn-warning btn-xs">
+                        <span class="glyphicon glyphicon-heart"></span>
+                      </button>
+                      <br>
+                      <span> {{imageSize(file.bytes, 'kb')}} </span>
+                    </td>
+                  </td>
+                </tr>
+            </tbody>
+          </table>
+          <table class="table">
+            <tbody>
+              <h4 style="color: red">All Images </h4>
               <tr ng-repeat="file in currentShowImages" style="display: inline-block">
                 <td>
                   <img ng-src="https://images.weserv.nl/?url={{file.url.replace('http://', '')}}&w=150&h=150" width="150" height="150" />
@@ -189,15 +226,20 @@
                     <button type="button" class="btn btn-success btn-xs" ng-click="edit(file)" title="Edit image">
                       <span class="glyphicon glyphicon-pencil"></span>
                     </button>
-                    <a  target="_blank" href="{{file.url}}">
+                    <a target="_blank" href="{{file.url}}">
                       <button type="button" class="btn btn-success btn-xs" title="Edit image">
                         <span class="glyphicon glyphicon-resize-full"></span>
                       </button>
                     </a>
-
+                    <button ng-if="file.isFeatureImage" type="button" class="btn btn-warning btn-xs">
+                      <span class="glyphicon glyphicon-heart"></span>
+                    </button>
+                    <br>
+                    <span> {{imageSize(file.bytes, 'kb')}} </span>
+                    <br/>
+                    <span> View : {{file.viewNumber}}</span>
 
                   </td>
-                  </button>
                 </td>
               </tr>
             </tbody>
@@ -231,6 +273,44 @@
               <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-success" ng-click="saveChange()">Save</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div id="notificationModal" class="modal fade" role="dialog">
+          <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Push notification to user</h4>
+              </div>
+              <div class="modal-body">
+
+                <div class="form-group">
+                  <label for="title">Title</label>
+                  <input type="text" ng-model="notification.title" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label for="content">Content</label>
+                  <input type="text" ng-model="notification.content" class="form-control" />
+                </div>
+                <div class="form-group">
+                  <label class="form-group">
+                    <label for="featureImage">Notification Type</label>
+                    <select class="form-control" ng-model="notification.type">
+                      <option selected value="0"> News </option>
+                      <option value="1"> New Images </option>
+                      <option value="2"> Category New </option>
+                      <option value="3"> Category Updated </option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" ng-click="pushNotification()">Save</button>
               </div>
             </div>
 

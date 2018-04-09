@@ -10,6 +10,7 @@
     "rules": {
         "eqeqeq": ["warn"],
         "radix": ["warn"],
+        "linebreak-style": 0,
         "newline-per-chained-call": ["warn"],
         "no-restricted-syntax": ["warn"],
         "no-param-reassign": ["error", { "props": false }],
