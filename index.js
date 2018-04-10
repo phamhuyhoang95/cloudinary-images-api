@@ -150,7 +150,11 @@ app.get('/images', async (req, res) => {
             // select image by matching category
             let result = db.get('images').value()
             if (category_id) {
-                return result.filter(r => r.category_id === category_id)
+                return getPaginatedItems(
+                    result.filter(r => r.category_id === category_id),
+                    page,
+                    per_page
+                )
             }
             const options = {
                 keys: ['category_name', 'tags']
@@ -497,14 +501,15 @@ app.get('/more_app', (req, res) => {
 app.get('/suggestion', (req, res) => {
     try {
         let tags = []
-        const categories = _.uniq(
+        const categories = _.uniqBy(
             db
                 .get('images')
                 .value()
                 .map(img => {
                     tags = tags.concat(img.tags)
                     return _.pick(img, ['category_id', 'category_name'])
-                })
+                }),
+            ['category_id', 'category_name']
         )
         tags = _.uniq(tags)
         res.json({
