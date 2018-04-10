@@ -158,44 +158,92 @@ angular.module('app', ['angularFileUpload'])
           }
         });
     }
+    $scope.updateCategory = () => {
+      const {
+        category_name,
+        category_name_new,
+        category_id
+      } = $scope.container
+      if (category_name_new) {
+        swal({
+            title: "Are you sure update this category?",
+            text: "Update can be done immediately!",
+            icon: "warning",
+            buttons: true,
+            dangerMode: true,
+          })
+          .then((willUpdate) => {
+            if (willUpdate) {
+              $http({
+                method: 'PUT',
+                data: JSON.stringify({
+                  category_name_old: category_name,
+                  category_name_new,
+                  category_id
+                }),
+                url: '/category',
+                headers: {
+                  'Content-Type': 'application/json;charset=utf-8'
+                }
+              }).success(function (data, status, headers) {
+                swal("Poof! Your image has been updated!", {
+                  icon: "success",
+                });
+                $('#categoryModal').modal('toggle')
+                setTimeout(() => {
+                  swal.close()
 
-    $scope.removeCategory = (category_id, category_name)  =>{
+                  // reload 
+                  location.reload()
+                }, 1000)
+
+              });
+            } else {
+              swal("Your image is safe!");
+            }
+          });
+      } else {
+        alert("You must enter new category name!")
+      }
+
+    }
+    $scope.removeCategory = (category_id, category_name) => {
 
       swal({
-        title: `Are you sure delete category ${category_name} ?`,
-        text: "Once deleted, you will not be able to recover  it!",
-        icon: "warning",
-        buttons: true,
-        dangerMode: true,
-      })
-      .then((willDelete) => {
-        if (willDelete) {
-          $http({
-            method: 'DELETE',
-            data: JSON.stringify({
-              category_id,
-              category_name
-            }),
-            url: '/category',
-            headers: {
-              'Content-Type': 'application/json;charset=utf-8'
-            }
-          }).success(function (data, status, headers) {
-            // find file location to delete
-            swal("Poof! Your category has been deleted!", {
-              icon: "success",
+          title: `Are you sure delete category ${category_name} ?`,
+          text: "Once deleted, you will not be able to recover  it!",
+          icon: "warning",
+          buttons: true,
+          dangerMode: true,
+        })
+        .then((willDelete) => {
+          if (willDelete) {
+            $http({
+              method: 'DELETE',
+              data: JSON.stringify({
+                category_id,
+                category_name
+              }),
+              url: '/category',
+              headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+              }
+            }).success(function (data, status, headers) {
+              // find file location to delete
+              swal("Poof! Your category has been deleted!", {
+                icon: "success",
+              });
+              setTimeout(() => {
+                // reload
+                location.reload();
+              }, 1000)
+
+
             });
-            setTimeout(() =>{
-            // reload
-            location.reload();
-            }, 1000)
-
-
-          });
-        } else {
-          swal("Your category is safe!");
-        }
-      });
+          } else {
+            swal("Your category is safe!");
+          }
+        });
 
     }
 
@@ -209,7 +257,10 @@ angular.module('app', ['angularFileUpload'])
       }).then(resp => {
         const file_inside_container = resp.map(f => f.data.data)
         $scope.container_data = listContainer.map((container, idx) => {
-          const {category_name, category_id } = container
+          const {
+            category_name,
+            category_id
+          } = container
           return {
             category_name,
             category_id,
@@ -314,10 +365,10 @@ angular.module('app', ['angularFileUpload'])
         case 'kb':
           break;
         case 'mb':
-        factor = Math.pow(factor, 2)
+          factor = Math.pow(factor, 2)
           break;
         case 'gb':
-        factor = Math.pow(factor, 3)
+          factor = Math.pow(factor, 3)
           break
         default:
           break;
