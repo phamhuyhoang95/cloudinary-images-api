@@ -509,7 +509,7 @@ app.get('/suggestion', (req, res) => {
                     tags = tags.concat(img.tags)
                     return _.pick(img, ['category_id', 'category_name'])
                 }),
-            ['category_id', 'category_name']
+            'category_id'
         )
         tags = _.uniq(tags)
         res.json({
