@@ -47,7 +47,8 @@ const {
     handleError,
     pickMultiple,
     optimizeUrl,
-    sendNotification
+    sendNotification,
+    convertDateToTimeStamp
 } = require('./helper/utils')
 // var pm2 = require('pm2');
 
@@ -148,10 +149,10 @@ app.get('/images', async (req, res) => {
         try {
             const { page, per_page, query, category_id } = req.query
             // select image by matching category
-            let result = db.get('images').value()
+            let result = db.get('images')
             if (category_id) {
                 return getPaginatedItems(
-                    result.filter(r => r.category_id === category_id),
+                    result.filter(r => r.category_id === category_id).value(),
                     page,
                     per_page
                 )
@@ -159,6 +160,7 @@ app.get('/images', async (req, res) => {
             const options = {
                 keys: ['category_name', 'tags']
             }
+            result = result.value()
             const fuse = new Fuse(result, options)
             // search with query
             result = fuse.search(query)
@@ -311,17 +313,17 @@ app.get('/categories', async (req, res) => {
     const { path } = req.route.path
     const run = () => {
         try {
-            let result = db.get('images').value()
+            const result = db
+                .get('images')
+                .groupBy('category_id')
+                .value()
             const finalResult = []
             const { page, per_page, numberImageView } = req.query
             // get category
-            result = _.groupBy(result, 'category_id')
             _.forOwn(result, (images, category_id) => {
                 // get list image for category
-                let imageInCategory = images.map(image => {
-                    image.created_at = new Date(image.created_at).getTime()
-                    return image
-                })
+                let imageInCategory = convertDateToTimeStamp(images)
+                const totalImages = imageInCategory.length
                 imageInCategory = _.orderBy(
                     imageInCategory,
                     ['created_at'],
@@ -332,9 +334,11 @@ app.get('/categories', async (req, res) => {
                 finalResult.push({
                     category_id,
                     category_name: _.first(imageInCategory).category_name,
-                    imageInCategory
+                    imageInCategory,
+                    totalImages
                 })
             })
+
             return getPaginatedItems(finalResult, page, per_page)
         } catch (error) {
             handleError(res, error, path)
@@ -368,10 +372,7 @@ app.get('/category', async (req, res) => {
                     category_id
                 })
                 .value()
-            categories = categories.map(image => {
-                image.created_at = new Date(image.created_at).getTime()
-                return image
-            })
+            categories = convertDateToTimeStamp(categories)
             categories = _.orderBy(categories, ['created_at'], ['desc'])
             categories = getPaginatedItems(categories, page, per_page)
             return categories
@@ -538,11 +539,12 @@ app.get('/images/top_search', (req, res) => {
     const run = async () => {
         try {
             const { page, per_page } = req.query
-            // make random image
-            const dataSource = db.get('images').value()
-            let images = _.orderBy(dataSource, ['viewNumber'], ['desc'])
-            images = getPaginatedItems(images, page, per_page)
-            return images
+            // sort image by viewNumber
+            const dataSource = db
+                .get('images')
+                .orderBy('viewNumber', 'desc')
+                .value()
+            return getPaginatedItems(dataSource, page, per_page)
         } catch (error) {
             handleError(res, error, path)
         }
@@ -570,13 +572,7 @@ app.get('/images/newest', (req, res) => {
         try {
             const { page, per_page } = req.query
             // get all from db
-            let images = db
-                .get('images')
-                .value()
-                .map(image => {
-                    image.created_at = new Date(image.created_at).getTime()
-                    return image
-                })
+            let images = convertDateToTimeStamp(db.get('images').value())
             images = _.orderBy(images, ['created_at'], ['desc'])
             images = getPaginatedItems(images, page, per_page)
             return images

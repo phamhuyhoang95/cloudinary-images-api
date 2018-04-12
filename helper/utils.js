@@ -199,6 +199,16 @@ function shuffle(array) {
 
     return array
 }
+/**
+ * convert all created time to time stamp
+ * @param {*} arr : source array
+ */
+function convertDateToTimeStamp(arr) {
+    return arr.map(item => {
+        item.created_at = new Date(item.created_at).getTime()
+        return item
+    })
+}
 
 function optimizeUrl(public_id, file_type) {
     const options = 'q_auto:best'
@@ -263,5 +273,6 @@ module.exports = {
     optimizeUrl,
     cacheExcute,
     buildCacheKey,
-    sendNotification
+    sendNotification,
+    convertDateToTimeStamp
 }
