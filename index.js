@@ -68,12 +68,17 @@ const {
 app.post('/images', upload.array('file'), async (req, res) => {
     const schema = validator.object().keys({
         tags: validator.string().optional(),
-        category_name: validator.string().required()
+        category_name: validator.string().required(),
+        parent_id: validator
+            .number()
+            .min(0)
+            .max(2)
+            .required()
     })
     const { path } = req.route.path
     const run = async () => {
         try {
-            let { tags, category_name } = req.body
+            let { tags, category_name, parent_id } = req.body
             // default is empty
             tags = tags ? trimArr(tags.split(',')) : []
             const images = req.files
@@ -115,6 +120,8 @@ app.post('/images', upload.array('file'), async (req, res) => {
                 image.viewNumber = 0
                 // add category_id
                 image.category_id = category_id
+                // add parent category id
+                image.parent_id = parent_id
                 return db
                     .get('images')
                     .push(image)
@@ -308,17 +315,29 @@ app.get('/categories', async (req, res) => {
         numberImageView: validator
             .number()
             .min(10)
+            .optional(),
+        parent_id: validator
+            .number()
+            .min(0)
+            .max(2)
             .optional()
     })
     const { path } = req.route.path
     const run = () => {
         try {
-            const result = db
-                .get('images')
-                .groupBy('category_id')
-                .value()
             const finalResult = []
-            const { page, per_page, numberImageView } = req.query
+            const { page, per_page, numberImageView, parent_id } = req.query
+            // filter by parent id
+            const result = parent_id
+                ? db
+                      .get('images')
+                      .filter(img => img.parent_id == parent_id)
+                      .groupBy('category_id')
+                      .value()
+                : db
+                      .get('images')
+                      .groupBy('category_id')
+                      .value()
             // get category
             _.forOwn(result, (images, category_id) => {
                 // get list image for category
@@ -333,12 +352,12 @@ app.get('/categories', async (req, res) => {
                 imageInCategory = _.take(imageInCategory, numberImageView || 10)
                 finalResult.push({
                     category_id,
+                    parent_id: parent_id || _.first(imageInCategory).parent_id,
                     category_name: _.first(imageInCategory).category_name,
                     imageInCategory,
                     totalImages
                 })
             })
-
             return getPaginatedItems(finalResult, page, per_page)
         } catch (error) {
             handleError(res, error, path)

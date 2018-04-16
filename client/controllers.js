@@ -54,7 +54,8 @@ angular.module('app', ['angularFileUpload'])
       item.url = `/images`;
       item.formData = [{
         tags: $scope.tags || "",
-        category_name: $scope.current_container
+        category_name: $scope.current_container,
+        parent_id: $scope.parent_id
       }]
     };
     // --------------------
@@ -110,10 +111,26 @@ angular.module('app', ['angularFileUpload'])
       $('#myModal').modal('toggle')
     }
     $scope.showImages = (container) => {
+      console.log(container)
       $scope.isShow = container ? true : false
       $scope.currentShowContainerName = container.category_name
       $scope.currentShowImages = container.files
       $scope.currentFeatureImages = container.files.filter(img => img.isFeatureImage === true)
+      $scope.currentParentId = container.parent_id
+    }
+    $scope.mapParentId = (parent_id) => {
+      console.log(parent_id)
+      parent_id = parseInt(parent_id)
+      switch (parent_id) {
+        case 0:
+          return 'Champions'
+        case 1:
+          return 'Runetera'
+        case 2:
+          return 'Collections'
+        default:
+          break;
+      }
     }
     $scope.saveChange = () => {
       let {
@@ -257,13 +274,16 @@ angular.module('app', ['angularFileUpload'])
       }).then(resp => {
         const file_inside_container = resp.map(f => f.data.data)
         $scope.container_data = listContainer.map((container, idx) => {
+          console.log(container)
           const {
             category_name,
-            category_id
+            category_id,
+            parent_id
           } = container
           return {
             category_name,
             category_id,
+            parent_id,
             files: file_inside_container[idx].map(img => {
               $scope.totalSizeImage += img.bytes
               return img
@@ -353,10 +373,13 @@ angular.module('app', ['angularFileUpload'])
         title: "Your file already uploaded! :D",
         icon: "success"
       })
-      swal.close()
+      setTimeout(() => {
+        swal.close()
+        // $scope.load()
+        location.reload();
+      }, 1500)
 
-      // $scope.load()
-      location.reload();
+
     })
     // show image size 
     $scope.imageSize = (size, unit) => {
