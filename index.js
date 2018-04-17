@@ -126,15 +126,13 @@ app.get('/images', async (req, res, next) => {
                 query
             } = req.query
             // select image by matching category
-            let result = db.get("images").value()
+            let result = db.get("images").value().map(img => _.pick(img, ['public_id', 'category_name', 'tags', 'url', 'optimizeUrl']))
             const options = {
                 keys: ['category_name', 'tags']
             }
             const fuse = new Fuse(result, options)
             // search with query
             result = fuse.search(query)
-            // extract field needed
-            result = pickMultiple(result, ['public_id', 'category_name', 'tags', 'url', 'optimizeUrl'])
             // paginate data 
             result = getPaginatedItems(result, page, per_page)
             // send back result to client
