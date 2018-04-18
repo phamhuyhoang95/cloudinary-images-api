@@ -348,14 +348,15 @@ app.get('/categories', async (req, res) => {
                     ['created_at'],
                     ['desc']
                 )
-
+                const thumb = imageInCategory.find(img => img.isFeatureImage) || _.first(imageInCategory)
                 imageInCategory = _.take(imageInCategory, numberImageView || 10)
                 finalResult.push({
                     category_id,
                     parent_id: parent_id || _.first(imageInCategory).parent_id,
                     category_name: _.first(imageInCategory).category_name,
                     imageInCategory,
-                    totalImages
+                    totalImages,
+                    thumb: thumb.url
                 })
             })
             return getPaginatedItems(finalResult, page, per_page)
