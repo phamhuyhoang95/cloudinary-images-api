@@ -329,13 +329,14 @@ app.get('/categories', async (req, res) => {
                     ['created_at'],
                     ['desc']
                 )
-
+                const thumb = imageIncategory.find(img => img.isFeatureImage) || _.first(imageInCategory)
                 imageInCategory = _.take(imageInCategory, numberImageView || 10)
                 finalResult.push({
                     category_id,
                     category_name: _.first(imageInCategory).category_name,
                     imageInCategory,
-                    totalImages
+                    totalImages,
+                    thumb: thumb.url
                 })
             })
 
