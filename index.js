@@ -329,7 +329,7 @@ app.get('/categories', async (req, res) => {
                     ['created_at'],
                     ['desc']
                 )
-                const thumb = imageIncategory.find(img => img.isFeatureImage) || _.first(imageInCategory)
+                const thumb = imageInCategory.find(img => img.isFeatureImage) || _.first(imageInCategory)
                 imageInCategory = _.take(imageInCategory, numberImageView || 10)
                 finalResult.push({
                     category_id,
