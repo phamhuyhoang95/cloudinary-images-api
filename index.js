@@ -283,8 +283,12 @@ app.get('/categories', async (req, res) => {
                     total_image: imageInCategory.length
                 }
             })
-            result = getPaginatedItems(result, page, per_page)
-            return result
+            const sortedCategoies = _.orderBy(
+                result,
+                [img => img.category_name.toLowerCase()],
+                ['desc']
+            )
+            return getPaginatedItems(sortedCategoies, page, per_page)
         } catch (error) {
             handleError(res, error, path)
         }
