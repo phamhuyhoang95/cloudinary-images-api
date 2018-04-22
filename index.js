@@ -329,7 +329,9 @@ app.get('/categories', async (req, res) => {
                     ['created_at'],
                     ['desc']
                 )
-                const thumb = imageInCategory.find(img => img.isFeatureImage) || _.first(imageInCategory)
+                const thumb =
+                    imageInCategory.find(img => img.isFeatureImage) ||
+                    _.first(imageInCategory)
                 imageInCategory = _.take(imageInCategory, numberImageView || 10)
                 finalResult.push({
                     category_id,
@@ -339,8 +341,12 @@ app.get('/categories', async (req, res) => {
                     thumb: thumb.url
                 })
             })
-
-            return getPaginatedItems(finalResult, page, per_page)
+            const sortedCategoies = _.orderBy(
+                finalResult,
+                [img => img.category_name.toLowerCase()],
+                ['desc']
+            )
+            return getPaginatedItems(sortedCategoies, page, per_page)
         } catch (error) {
             handleError(res, error, path)
         }
