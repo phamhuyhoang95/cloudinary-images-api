@@ -111,23 +111,27 @@ angular.module('app', ['angularFileUpload'])
       $('#myModal').modal('toggle')
     }
     $scope.showImages = (container) => {
-      console.log(container)
       $scope.isShow = container ? true : false
       $scope.currentShowContainerName = container.category_name
       $scope.currentShowImages = container.files
-      $scope.currentFeatureImages = container.files.filter(img => img.isFeatureImage === true)
+      $scope.currentFeatureImages = container.files.filter(img => img.isFeatureImage === true || img.isFeatureParentImage)
       $scope.currentParentId = container.parent_id
     }
     $scope.mapParentId = (parent_id) => {
-      console.log(parent_id)
       parent_id = parseInt(parent_id)
       switch (parent_id) {
         case 0:
-          return 'Champions'
+          return 'Assassin'
         case 1:
-          return 'Runetera'
+          return 'Tank'
         case 2:
-          return 'Collections'
+          return 'Fighter'
+        case 3:
+          return 'Mage'
+        case 4:
+          return 'Marksman'
+        case 5: 
+          return 'Support'
         default:
           break;
       }
@@ -136,6 +140,7 @@ angular.module('app', ['angularFileUpload'])
       let {
         tags,
         isFeatureImage,
+        isFeatureParentImage,
         public_id
       } = $scope.selectedImg
       if (tags instanceof Array) {
@@ -150,12 +155,16 @@ angular.module('app', ['angularFileUpload'])
         })
         .then((willUpdate) => {
           if (willUpdate) {
+            // override 
+            isFeatureImage = (isFeatureImage == true)? 0 : 1
+            isFeatureParentImage = (isFeatureParentImage == true)? 0 : 1
             $http({
               method: 'PUT',
               data: JSON.stringify({
                 public_id,
                 tags,
-                isFeatureImage
+                isFeatureImage,
+                isFeatureParentImage
               }),
               url: '/image',
               headers: {

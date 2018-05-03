@@ -72,7 +72,7 @@ app.post('/images', upload.array('file'), async (req, res) => {
         parent_id: validator
             .number()
             .min(0)
-            .max(2)
+            .max(5)
             .required()
     })
     const { path } = req.route.path
@@ -110,6 +110,8 @@ app.post('/images', upload.array('file'), async (req, res) => {
                 ? existRecord.category_id
                 : shortid.generate()
             uploadProgress.map(image => {
+                // add flag parent feature image
+                image.isFeatureParentImage = false
                 // add optimize url
                 image.optimizeUrl = optimizeUrl(image.public_id, image.format)
                 // add category to image
@@ -198,11 +200,25 @@ app.put('/image', async (req, res) => {
     const schema = validator.object().keys({
         public_id: validator.string().required(),
         tags: validator.string().optional(),
-        isFeatureImage: validator.boolean().optional() // if true make this image become feature images
+        isFeatureImage: validator
+            .number()
+            .min(0)
+            .max(1)
+            .optional(), // if true make this image become feature images
+        isFeatureParentImage: validator
+            .number()
+            .min(0)
+            .max(1)
+            .optional()
     })
     const run = async () => {
         try {
-            let { tags, public_id } = req.body
+            let {
+                tags,
+                public_id,
+                isFeatureImage,
+                isFeatureParentImage
+            } = req.body
             const foundImage = db.get('images').find({
                 public_id
             })
@@ -224,11 +240,34 @@ app.put('/image', async (req, res) => {
                     .write()
             }
             // toggle flag feature image
-            foundImage
-                .assign({
-                    isFeatureImage: !foundImage.value().isFeatureImage
-                })
-                .write()
+            if (isFeatureImage == 0) {
+                foundImage
+                    .assign({
+                        isFeatureImage: true
+                    })
+                    .write()
+            } else {
+                foundImage
+                    .assign({
+                        isFeatureImage: false
+                    })
+                    .write()
+            }
+            if (isFeatureParentImage == 0) {
+                // toggle flag parent feature image
+                foundImage
+                    .assign({
+                        isFeatureParentImage: true
+                    })
+                    .write()
+            } else {
+                // toggle flag parent feature image
+                foundImage
+                    .assign({
+                        isFeatureParentImage: false
+                    })
+                    .write()
+            }
 
             res.status('200').json({
                 code: 200,
@@ -374,6 +413,60 @@ app.get('/categories', async (req, res) => {
     }
     validateModel(req.query, schema, res, run, path)
 })
+/**
+ * Get list  parent category
+ */
+app.get('/category/parent', async (req, res) => {
+    const { path } = req.route.path
+
+    try {
+        const finalResult = []
+        const getParentName = parent_id => {
+            switch (parent_id) {
+                case 0:
+                    return 'Assassin'
+                case 1:
+                    return 'Tank'
+                case 2:
+                    return 'Fighter'
+                case 3:
+                    return 'Mage'
+                case 4:
+                    return 'Marksman'
+                case 5:
+                    return 'Support'
+                default:
+                    return ''
+            }
+        }
+        const parentCategories = db
+            .get('images')
+            .groupBy('parent_id')
+            .value()
+        _.forOwn(parentCategories, (images, parent_id) => {
+            let imageInCategory = convertDateToTimeStamp(images)
+            const totalImages = imageInCategory.length
+            imageInCategory = _.orderBy(
+                imageInCategory,
+                ['created_at'],
+                ['desc']
+            )
+            const thumb =
+                imageInCategory.find(img => img.isFeatureParentImage) ||
+                _.first(imageInCategory)
+            finalResult.push({
+                parent_id,
+                category_name: getParentName(parseInt(parent_id)),
+                thumb: thumb.url,
+                totalImages
+            })
+        })
+        res.json(finalResult)
+    } catch (error) {
+        handleError(res, error, path)
+    }
+})
+
 /**
  * get List Image for Category
  */
